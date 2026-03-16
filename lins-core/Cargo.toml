@@ -1,0 +1,22 @@
+[package]
+name = "lins-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core library for Lins FalkorDB graph explorer"
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+
+# FalkorDB connection via Redis protocol
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+
+# Config file watching
+notify = { version = "7", features = ["macos_kqueue"] }

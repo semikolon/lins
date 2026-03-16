@@ -1,0 +1,11 @@
+[connection]
+host = "127.0.0.1"
+port = 6380
+password = "falkordb"
+
+[server]
+port = 3333
+host = "0.0.0.0"
+
+[display.properties]
+hide = ["name_embedding", "fact_embedding", "group_id", "uuid"]

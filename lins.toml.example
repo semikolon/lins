@@ -1,0 +1,72 @@
+# Lins — FalkorDB Graph Explorer
+# Configuration file. Auto-generated values can be customized freely.
+# Changes are hot-reloaded (styling, display) or require restart (connection, server).
+
+# ─── FalkorDB Connection ──────────────────────────────────────────────────────
+[connection]
+host = "127.0.0.1"
+port = 6380
+password = "falkordb"
+# default_graph = "my_graph"    # Graph to load on startup
+
+# ─── Web Server ───────────────────────────────────────────────────────────────
+[server]
+port = 3000
+host = "0.0.0.0"               # "0.0.0.0" for LAN access, "127.0.0.1" for local only
+
+# ─── Plugins ──────────────────────────────────────────────────────────────────
+# Plugin config overlays, loaded in order. Later plugins override earlier ones.
+# User config (this file) always takes final precedence.
+# plugins = [
+#     "plugins/graphiti/lins-graphiti.toml",
+# ]
+
+# ─── Styling ──────────────────────────────────────────────────────────────────
+# Default styling applied to all nodes and edges.
+[styling.defaults]
+font_family = "Manrope"
+background = "#1a1a2e"          # Dark theme background
+edge_color = "#4a5568"          # Default edge color
+
+# Per-label styling. Colors auto-assigned from a desaturated palette if omitted.
+# [styling.labels.Entity]
+# color = "#2d6a4f"             # Forest green
+# size = "property:degree"      # Size by connection count, or a fixed number (e.g. 10)
+# caption = "name"              # Property to display as node label
+# shape = "circle"              # circle, diamond, hexagon, square
+
+# [styling.labels.Episodic]
+# color = "#6b7280"
+# shape = "diamond"
+# caption = "source_description"
+
+# Per-relationship-type styling.
+# [styling.relationships.RELATES_TO]
+# color = "#059669"
+# label = "fact"                # Property to display on the edge
+# style = "solid"               # solid, dashed, dotted
+
+# ─── Display ──────────────────────────────────────────────────────────────────
+# Control which properties appear in the property panel.
+[display.properties]
+# show = ["name", "summary", "created_at"]   # Explicit allowlist (empty = show all)
+hide = ["name_embedding", "fact_embedding", "group_id", "uuid"]   # Hide vectors & internal fields
+# date_format = "%Y-%m-%d %H:%M"
+
+# ─── Search ───────────────────────────────────────────────────────────────────
+# LLM endpoint for natural language search (optional, v1.5).
+# Vocabulary autocomplete works without any LLM configuration.
+[search]
+# llm_endpoint = "https://api.openai.com/v1"
+# llm_model = "gpt-4o-mini"
+# llm_api_key_env = "OPENAI_API_KEY"         # Read API key from this env var
+
+# Embedding endpoint for semantic search (optional, v2).
+# embedding_endpoint = "http://192.168.4.1:8080/v1"
+# embedding_dimensions = 1024
+
+# ─── FalkorDB Recommended Settings ───────────────────────────────────────────
+# Add to your redis.conf for optimal performance:
+#   loadmodule /path/to/falkordb.so TIMEOUT_DEFAULT 120000 TIMEOUT_MAX 300000 CACHE_SIZE 200
+# Without TIMEOUT_DEFAULT, queries can hang indefinitely.
+# Without CACHE_SIZE, query plan recompilation causes overhead.

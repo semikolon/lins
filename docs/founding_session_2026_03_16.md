@@ -250,7 +250,8 @@ Tauri 2 / eframe support Windows natively. `.msi` builds. Web mode works in any 
 
 Key principles established:
 - Bloom-inspired but better
-- Light theme (warm, welcoming)
+- **Mid-to-dark theme** — NOT pure dark, NOT light. Mid-to-dark grey or dark blue background, white or bright text, accent color. User explicitly said they prefer "neither" dark nor light — "somewhere in the middle of the spectrum."
+- **Font**: Söhne-style (the font Claude's UI uses, by Klim Type Foundry). Or similar clean, modern sans-serif.
 - Great defaults (zero-config beauty)
 - Smooth auto-adjustments (spacing, font sizes, padding)
 - Subtle contrast, intuitive colors
@@ -270,6 +271,15 @@ If Rust-native path chosen, SvelteKit (`lins-web/`) becomes unnecessary. All UI 
 
 ### DECIDED: Name
 Lins (Swedish: lens). Available on crates.io.
+
+### DECIDED: License
+MIT. User confirmed Mar 17.
+
+### DECIDED: Config Format
+TOML (`lins.toml`). Standard for Rust ecosystem. User confirmed Mar 17.
+
+### DECIDED: Template Engine (v3, Living Docs)
+Tera (Rust-native Jinja2) is the current plan. User open to exploring alternatives later.
 
 ### DECIDED: FalkorDB Connection
 Redis/RESP via redis-rs. Verbose mode. Read-only validation. Schema introspection.

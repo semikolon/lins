@@ -1,5 +1,7 @@
 # Requirements: Lins — FalkorDB Graph Explorer
 
+> **Note (Mar 17, 2026):** This spec was written during the initial /spec session and reflects the SvelteKit + Sigma.js architecture. The rendering technology and UI/UX design are now **open decisions** — egui + wgpu (Rust-native with WASM) is under active evaluation as an alternative. See `docs/founding_session_2026_03_16.md` §8 for the full rendering pivot discussion and §9 for all open decisions.
+
 ## Overview
 
 - **Type**: New feature (greenfield project)

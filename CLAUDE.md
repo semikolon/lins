@@ -86,7 +86,7 @@ FalkorDB has no cross-graph queries. Lins queries each graph, merges results cli
 > "The default color scheme should have subtle contrast and feel super intuitive instead of like a terminal from the Matrix or something a sysadmin would endure looking at." — User
 > "We should also make maximal smooth use of AI where applicable." — User
 
-Bloom-inspired but better. Light theme (not dark). Large nodes, warm colors, generous spacing. Zero-config beauty.
+Bloom-inspired but better. **Mid-to-dark theme** (not pure dark, not light — "somewhere in the middle," dark grey or dark blue, white/bright text, accent color). Söhne-style font (what Claude's UI uses). Large nodes, warm colors, generous spacing. Zero-config beauty. NOT "a terminal from the Matrix."
 
 ## Version Tiers
 

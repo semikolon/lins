@@ -1,5 +1,7 @@
 # Tasks: Lins — FalkorDB Graph Explorer
 
+> **Note (Mar 17, 2026):** These tasks assume SvelteKit + Sigma.js. If the egui + wgpu path is chosen, tasks T-2, T-3, T-9 through T-12, T-16, T-23, T-26-27 would be replaced with egui equivalents. See `docs/founding_session_2026_03_16.md` §8-9.
+
 ## Overview
 
 - **Estimated scope**: Large (multi-version project)

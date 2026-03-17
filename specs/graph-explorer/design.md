@@ -1,5 +1,7 @@
 # Design: Lins — FalkorDB Graph Explorer
 
+> **Note (Mar 17, 2026):** This design reflects the SvelteKit + Sigma.js architecture from the initial build. The rendering technology is now an **open decision** — egui + wgpu (Rust-native, compiles to WASM for browser) is under evaluation. The visual design direction has also evolved: mid-to-dark theme (not pure dark, not light), Söhne-style font, Bloom-inspired UX with great defaults. See `docs/founding_session_2026_03_16.md` §8-9 for current state.
+
 ## Tech Stack
 
 | Layer | Choice | Rationale |

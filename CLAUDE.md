@@ -17,6 +17,14 @@
 - egui + wgpu (proposed) — Rust-native GPU rendering, compiles to WASM for browser, full pixel control
 - The SvelteKit frontend (`lins-web/`) may be replaced entirely by egui if the Rust-native path is chosen
 
+**egui limitations discovered (Mar 21, 2026 — dotfiles fleet offloading session, Beeper client research):**
+- **No color emoji** — monochrome glyphs only (issue #2551, open since Jan 2023, unresolved). Affects node labels with emoji.
+- **Image memory** — loading 10 images (~1 MB each) = 1.1 GB (issue #5439). Graph with many node thumbnails/avatars would need aggressive cache management.
+- **IME broken** — Tab intercepted, can't select IME candidates. Affects international text input in search/labels.
+- **RAM 150-300 MB** for moderate apps (not the ~30 MB expected). Regression tracked in issue #5245.
+- **No native macOS menu bar** (issue #3411). Users expect top-of-screen menu.
+- **For Lins specifically**: These may be acceptable — graph visualization is less text/emoji-heavy than chat. The image memory issue is the biggest concern for graph nodes with visual content. Evaluate whether Sigma.js + SvelteKit gives better UX/effort ratio for the UI layer while keeping `lins-core` in Rust.
+
 **UI/UX design NOT decided.** User explicitly stated: "I'm not at all decided yet on the UI/UX design, will need some deep thought, I want to make super conscious decisions about it."
 
 ## Architecture

@@ -1,9 +1,11 @@
 # How Lins should show a graph: a proposal
 
 **Date:** 2026-10-10
-**Standing:** a proposal. Nothing in it is built, and nothing in it is decided. How Lins looks and
-which library draws it are the owner's open decisions (`founding_session_2026_03_16.md` § 9), and
-this note is written for him to rule on, one decision at a time (§ 10).
+**Standing:** a proposal. Nothing in it is built. **One part is decided (2026-10-10): a node is a
+card that holds its whole name.** What draws the cards is open, and so is everything after it
+(§ 10). How Lins looks and which library draws it are the owner's decisions
+(`founding_session_2026_03_16.md` § 9), and this note is written for him to rule on, one decision
+at a time.
 **What it rests on:** his own founding notes, his verdict on the first real view, three research
 reports kept word for word in `docs/research/` (2026-10-10), and counts taken from the graph the
 view was tried on.
@@ -35,9 +37,10 @@ Six moves, each argued below:
    its count in the scene and in the graph; it selects, hides and brings back. What is left out
    is always said, with the reason.
 
-The consequence that needs a ruling of its own: **cards with wrapped text are drawn best by the
-browser itself** (HTML for nodes, SVG for links), which means Sigma.js is retired from the default
-path (§ 7).
+The consequence that needs a ruling of its own: **what draws the cards.** This note recommends the
+browser itself (HTML for nodes, SVG for links), which retires Sigma.js from the default path
+(§ 7). As first written it put that inside the question about cards. The owner agreed to cards
+and asked why they would set the Rust renderer aside. They do not: § 7a.
 
 ---
 
@@ -82,6 +85,12 @@ From the founding notes (March 2026), which this proposal treats as the brief:
 
 From 2026-10-10, on the first real view: barely legible; space it out much more; the clustering
 needs work; do not show too much of the graph at any one time; take the UI with care.
+
+From 2026-10-10, on this proposal's first question (cards that hold the whole name, against small
+circles with a name beside them): "I'm with you. But why would the Rust renderer be set aside by
+this? Explain". And on the graph the view was tried on, whether the documents its nodes were taken
+from belong in the picture: "Maybe it pollutes more than it helps, for now?" That graph's own
+settings now leave them out, which is what `[[display.nodes.hide]]` is for.
 
 ---
 
@@ -380,12 +389,52 @@ Three things follow, and each is said plainly because the owner kept this decisi
 - **The Rust renderer is not taken up now.** Its one benefit that a web page lacks, a native
   window, is on the roadmap as a desktop shell around the same page (v1.5). Writing a text
   engine in Rust would be work without a gain a user can see at this scene size.
+  *(This bullet argued from effort, which the founding notes rule out as a reason, and "a text
+  engine" overstated what would be written. Restated in § 7a.)*
 - **Layout can still be Rust.** The server could compute positions (crates exist for force and
   layered layouts) and send them with the scene. That is a later choice and a small one.
 
 Within the recommendation, two parts are named but not chosen here: Svelte Flow (MIT, built for
 Svelte 5) as the shell that gives panning, zooming, dragging, selection and a minimap; and dagre
 or ELK for the columns (ELK also places link names, at 1.6 MB and under the Eclipse licence).
+
+### 7a. The owner's question: why would cards set the Rust renderer aside?
+
+They do not. A card needs three things from whatever draws it: wrapped text in a box sized to the
+text, a layout that knows the box's size, and links that end at the box's edge. The research
+report says of egui that text inside a node with wrapping is "possible with custom node drawing".
+So the decision about cards and the decision about the renderer are two decisions, and § 10 now
+lists them apart.
+
+What the recommendation above rested on, sorted by whether it may count. The founding notes say
+development effort is not a reason, so the first group is struck.
+
+**Effort, which does not count.** The one graph crate for egui says it is not in active
+development, draws a node as a dot of 5 px radius, and has no layout that knows a node's size. So
+the node and link drawing and a size-aware layout would be written for Lins. "Writing a text
+engine" in the bullet above was too strong: egui lays out and wraps text itself, with hinting
+since 0.34 and proper shaping since 0.35. What would be written is the graph drawing on top of it.
+
+**How it runs, which does count.**
+
+| | The browser draws | A Rust renderer draws (egui and wgpu) |
+|---|---|---|
+| Text | The browser's own: any face, coloured emoji, input methods, selectable, found by page search, read by screen readers | Good and improving; coloured emoji are in an unreleased version; on the web the page cannot be searched and screen-reader support is called experimental by its own README |
+| Size of a scene | A few hundred nodes, which is all this design asks for | Tens of thousands, which this design rules out on purpose but a far view of a whole graph would want |
+| As a desktop app | A shell around the same page (a web view) | A native window with no web view, and one renderer everywhere. Memory was not compared: the March notes measured 150 to 300 MB for a moderate egui app |
+| On the web | An ordinary page | A download of about 2.5 MiB before anything shows, by the report's reading of an open issue |
+| Inside another app | A Svelte component, which fits an app that is itself a Svelte page | A crate, which fits an app drawn in Rust |
+
+**What was not checked.** Nobody has drawn one scene both ways. The report's own open question
+is whether egui text inside a node is crisp enough at reading size, and it was written from
+documentation and source, not from a trial. The findings on egui in `CLAUDE.md` are from March
+2026 and two of them (emoji, input methods) have moved since.
+
+**The recommendation, restated on the grounds that count:** the browser draws the scene, because
+at this size the limit on quality is text and the browser's text is the more complete; layout can
+be computed in Rust either way; and a Rust renderer stays the natural choice for a far view of a
+whole graph, if one is wanted. That is a recommendation. The decision is the owner's, and a
+one-scene trial of both (§ 8) is the honest way to settle the part about how the text looks.
 
 ---
 
@@ -423,13 +472,16 @@ Each step is useful alone and can be checked against the real graph.
 
 ## 10. Decisions for the owner, in the order they depend on each other
 
-1. **Cards that hold the whole name, drawn by the browser, in place of dots drawn by Sigma.**
-   Everything else rests on this.
-2. The budget: aim at 40, stop at 100, bring in 8 at a time.
-3. Columns around a node as the default arrangement, forces for free scenes.
-4. Membership as chips.
-5. Bright text on raised dark cards, or dark text on light cards.
-6. Inter as the face.
+1. **Cards that hold the whole name, in place of dots.** Everything else rests on this.
+   **Decided 2026-10-10**, the owner: "I'm with you."
+2. **What draws the cards**: the browser itself, a library, or a renderer in Rust (§ 7, § 7a).
+   Open, and next. As first written this was part of decision 1; the owner asked why cards would
+   set the Rust renderer aside, and they do not.
+3. The budget: aim at 40, stop at 100, bring in 8 at a time.
+4. Columns around a node as the default arrangement, forces for free scenes.
+5. Membership as chips.
+6. Bright text on raised dark cards, or dark text on light cards.
+7. Inter as the face.
 
 ---
 

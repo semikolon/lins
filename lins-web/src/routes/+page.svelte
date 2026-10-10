@@ -102,6 +102,10 @@
   .explorer {
     display: grid;
     grid-template-rows: 56px 1fr 28px;
+    /* minmax(0, …): a grid column is otherwise as wide as its widest row wants to be, so a long
+       line in the status bar made the whole page wider than the window and cut the canvas off
+       at the right. */
+    grid-template-columns: minmax(0, 1fr);
     height: 100%;
     width: 100%;
     overflow: hidden;

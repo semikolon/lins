@@ -277,13 +277,16 @@
     border-left: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    transform: translateX(100%);
-    transition: transform var(--transition-normal);
+    /* Closed, the panel takes no room: it is pulled out past the right edge by its own width,
+       so the canvas has the whole pane. (It used to be moved aside with a transform, which
+       hides a box and still keeps its place: a strip of empty canvas colour, 320px wide.) */
+    margin-right: -320px;
+    transition: margin-right var(--transition-normal);
     overflow: hidden;
   }
 
   .panel.visible {
-    transform: translateX(0);
+    margin-right: 0;
   }
 
   .panel-header {

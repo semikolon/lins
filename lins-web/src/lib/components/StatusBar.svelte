@@ -53,7 +53,7 @@
       <span class="divider">|</span>
       <span class="status-text">Graph: <strong>{graph}</strong></span>
       <span class="divider">|</span>
-      <span class="status-text">{shown()}</span>
+      <span class="status-text counts" title={shown()}>{shown()}</span>
       {#if hiddenSummary(currentView) !== ''}
         <span class="divider">|</span>
         <label class="hidden-toggle" title={`The view leaves out: ${hiddenSummary(currentView)}`}>
@@ -99,6 +99,9 @@
     color: var(--text-dim);
     flex-shrink: 0;
     user-select: none;
+    gap: 12px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .status-left,
@@ -106,6 +109,29 @@
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  /* In a narrow window the left side gives way and is cut with an ellipsis; the switch that
+     brings hidden kinds back, and the right side, keep their place. */
+  .status-left {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .status-left > * {
+    flex-shrink: 0;
+  }
+
+  .status-left > .status-text.counts {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .status-right {
+    flex-shrink: 0;
   }
 
   .status-indicator {

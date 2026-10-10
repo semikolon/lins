@@ -8,7 +8,7 @@
 //! - **Scaled**: set the text once, at full size, and stretch it. This is what egui's own zoom
 //!   container does. Cheap, and soft at every zoom but 100%.
 //! - **SharpAtRest**: stretch while the zoom is changing, and set the text again at the new size
-//!   a moment after it stops. What a browser does with a pinch.
+//!   a moment after it stops.
 //! - **SharpAlways**: set the text again at every frame of a zoom. Sharp throughout, and every
 //!   frame of a zoom pays for new glyphs.
 //!

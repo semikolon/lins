@@ -505,7 +505,7 @@ the Rust half the page shows the browser's half and says what is missing.
    draw text, and the page switches between them:
    - *stretched*: what egui's own zoom container does. Visibly soft at 200%.
    - *sharp when it rests*: stretched while the zoom moves, set again at the new size 0.18 s
-     after it stops. What a browser does with a pinch. The default.
+     after it stops. The default.
    - *sharp at every frame*: set again at every frame of a zoom.
    Lines are broken once, at full size, so a card never changes shape under the reader.
 2. **Cards on an actual graph.** Tried on a node with 55 neighbours in a graph of 7,983 nodes,

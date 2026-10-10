@@ -430,11 +430,38 @@ is whether egui text inside a node is crisp enough at reading size, and it was w
 documentation and source, not from a trial. The findings on egui in `CLAUDE.md` are from March
 2026 and two of them (emoji, input methods) have moved since.
 
+**Measured the same evening, on the owner's next question** ("But if I use Rust, can Lins be
+shown as a browser view like it is shown here in the sidebar browser in this session?"). Yes. In
+the Claude desktop app's built-in browser pane (Chrome 152 on an Apple M2: WebGL2 on the Metal
+renderer, the WebGPU API present with an adapter, WebAssembly streaming available), the official
+egui demo, a Rust program compiled to WebAssembly, loaded and ran. Lins's server would serve such a
+build at the same address it serves the page today, and the same code runs as a native window.
+What was seen and counted:
+
+- The demo drew at the pane's full resolution (a 1530 x 1784 pixel canvas in a 765 x 892 window)
+  and its text was sharp at reading size, on one look at one machine. So "the browser's text
+  looks better" is not something this proposal can claim.
+- The page was one canvas: 13 elements, **0 characters of text**. A reader cannot select a name
+  or find it with the page's search. A test or an agent driving the browser reads nothing from
+  the page and sees pixels only. A Rust-drawn Lins would therefore publish what it is showing as
+  data beside the picture (the nodes, their names and their boxes), which its own layout knows
+  exactly.
+- The demo's program was 4.3 MB over the wire and 11.4 MB unpacked. It holds every widget egui
+  has; what a Lins build would weigh is unknown.
+- Not seen: text while a scene is zoomed or panned, cards on a graph, and the graph crate's own
+  demo. Those are what a trial would show.
+
+One row of the table above does not separate the two: a canvas drawn by Rust also drops into any
+web page, a Svelte one included, and is a crate besides.
+
 **The recommendation, restated on the grounds that count:** the browser draws the scene, because
 at this size the limit on quality is text and the browser's text is the more complete; layout can
 be computed in Rust either way; and a Rust renderer stays the natural choice for a far view of a
 whole graph, if one is wanted. That is a recommendation. The decision is the owner's, and a
-one-scene trial of both (§ 8) is the honest way to settle the part about how the text looks.
+one-scene trial of both (§ 8) is the honest way to settle the part about how the text looks. After the
+measurement above the case for the browser is narrower than first written: its text is real text
+(selectable, searchable, readable by a test), and that is the whole of it. The trial is now the
+next step proposed, one real scene drawn both ways and shown side by side.
 
 ---
 

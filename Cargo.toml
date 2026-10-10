@@ -1,5 +1,8 @@
 [workspace]
-members = ["lins-core", "lins-server"]
+members = ["lins-core", "lins-server", "lins-render"]
+# lins-render is the trial of a Rust-drawn view. It is built for the web by
+# scripts/build-render.sh and is left out of an ordinary `cargo build`.
+default-members = ["lins-core", "lins-server"]
 resolver = "2"
 
 [workspace.package]
@@ -19,3 +22,12 @@ thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { version = "0.4", features = ["serde"] }
+
+# What scripts/build-render.sh builds lins-render with: a smaller download for the web, and
+# the server's own release build is left as it was.
+[profile.web]
+inherits = "release"
+opt-level = 2
+lto = true
+codegen-units = 1
+strip = "debuginfo"

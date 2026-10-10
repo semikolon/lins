@@ -19,6 +19,8 @@
 - egui + wgpu (proposed) — Rust-native GPU rendering, compiles to WASM for browser, full pixel control
 - The SvelteKit frontend (`lins-web/`) may be replaced entirely by egui if the Rust-native path is chosen
 
+**A trial of the two renderers exists (2026-10-10): `/trial` draws one scene by the browser and by Rust, side by side.** The Rust half is the crate `lins-render` (egui 0.36 on a canvas, WebAssembly through WebGL): `scene.rs` places a scene, `view.rs` draws and moves it, `web.rs` is what a page calls. The browser half is `lins-web/src/routes/trial/` with its rules in `lins-web/src/lib/trial/scene.ts`. **The placing rules are written twice, once in each language, and must stay the same**: the page asks the Rust rules to place each scene with the browser's text heights and says so when they differ. Build the Rust half with `scripts/build-render.sh` (rustup's toolchain, since egui 0.36 needs Rust 1.95 and Homebrew's cannot build it; the crate is outside `default-members`). What the trial measured and what it left open: `docs/display_proposal_2026_10_10.md` § 8a. It decides nothing: the choice of renderer is the owner's, by eye. Two things learned that any Rust-drawn view must carry: egui stretches set text when a layer is zoomed, so text has to be set again at the new size (the trial does it a moment after the zoom rests); and egui's own line wrapping breaks earlier than a browser's, so the trial breaks lines itself.
+
 **egui limitations discovered (Mar 21, 2026 — dotfiles fleet offloading session, Beeper client research). ⚠ Partly moved since, by the research report of 2026-10-10 (`docs/research/rendering_options_2026_10_10.md` § 3): hinted text since egui 0.34, proper shaping since 0.35, mobile input-method fixes in 0.36, coloured emoji in an unreleased 0.37. Check the report before repeating a line below.**
 - **No color emoji** — monochrome glyphs only (issue #2551, open since Jan 2023, unresolved). Affects node labels with emoji.
 - **Image memory** — loading 10 images (~1 MB each) = 1.1 GB (issue #5439). Graph with many node thumbnails/avatars would need aggressive cache management.
@@ -44,7 +46,7 @@ lins-web/      (SvelteKit) — Sigma.js graph renderer + UI components
 ```
 lins-core/     (Rust lib)  — FalkorDB connection, schema, config (KEEP)
 lins-server/   (Rust bin)  — Axum API + serves WASM build (KEEP)
-lins-render/   (Rust lib)  — Graph renderer + all UI (egui, NEW)
+lins-render/   (Rust lib)  — Graph renderer + all UI (egui, NEW; since 2026-10-10 a trial of one scene exists here)
 lins-app/      (Rust bin)  — Native desktop via eframe/wgpu (NEW)
 lins-wasm/     (Rust)      — Same renderer → WASM for browser (NEW)
 ```

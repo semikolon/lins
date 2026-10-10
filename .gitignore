@@ -18,3 +18,8 @@ lins-web/.svelte-kit/
 .vscode/
 .idea/
 .cargo/
+
+# The Rust-drawn view: built or fetched by scripts/build-render.sh
+.tools/
+lins-web/static/render/
+lins-render/assets/fonts/

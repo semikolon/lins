@@ -1,0 +1,27 @@
+[package]
+name = "lins-render"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Lins drawn by Rust: one scene of cards and links, on a canvas in a web page"
+
+# A trial, built for the web by scripts/build-render.sh. The scene's rules (scene.rs) and its
+# drawing (view.rs) know nothing of the web; web.rs is the part a page talks to. A native
+# window would be a second small file beside web.rs.
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+egui = { version = "0.36", default-features = false, features = ["default_fonts"] }
+serde.workspace = true
+serde_json.workspace = true
+log = "0.4"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+eframe = { version = "0.36", default-features = false, features = ["glow", "default_fonts"] }
+# Must equal BINDGEN_VERSION in scripts/build-render.sh.
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["HtmlCanvasElement"] }

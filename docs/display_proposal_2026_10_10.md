@@ -1,9 +1,10 @@
 # How Lins should show a graph: a proposal
 
 **Date:** 2026-10-10
-**Standing:** a proposal. Nothing in it is built. **One part is decided (2026-10-10): a node is a
-card that holds its whole name.** What draws the cards is open, and so is everything after it
-(§ 10). How Lins looks and which library draws it are the owner's decisions
+**Standing:** a proposal. Nothing in it is built, except one trial page that draws one scene two
+ways so that the next decision can be made by eye (§ 8a). **One part is decided (2026-10-10): a
+node is a card that holds its whole name.** What draws the cards is open, and so is everything
+after it (§ 10). How Lins looks and which library draws it are the owner's decisions
 (`founding_session_2026_03_16.md` § 9), and this note is written for him to rule on, one decision
 at a time.
 **What it rests on:** his own founding notes, his verdict on the first real view, three research
@@ -460,8 +461,9 @@ be computed in Rust either way; and a Rust renderer stays the natural choice for
 whole graph, if one is wanted. That is a recommendation. The decision is the owner's, and a
 one-scene trial of both (§ 8) is the honest way to settle the part about how the text looks. After the
 measurement above the case for the browser is narrower than first written: its text is real text
-(selectable, searchable, readable by a test), and that is the whole of it. The trial is now the
-next step proposed, one real scene drawn both ways and shown side by side.
+(selectable, searchable, readable by a test), and that is the whole of it. The trial was the
+next step proposed, one real scene drawn both ways and shown side by side. The owner said to do
+it ("Sure, thanks, do that."), and it is built: § 8a.
 
 ---
 
@@ -478,6 +480,89 @@ main machine and on an older laptop:
 5. Link names along the line: readable at 12 px on short links between large cards?
 6. Bright text on raised dark cards at 14 px against dark text on light cards: which does the
    owner read faster on his own screen?
+
+### 8a. The trial: one scene, drawn two ways (built 2026-10-10)
+
+**What it is.** One page, `/trial`, with two panes. Both show the same node and neighbours from
+whatever graph the server has, as cards in columns with links (§ 5.3, § 5.4). One pane is drawn by
+the browser: HTML cards, SVG links. The other is drawn by Rust: egui on a canvas, compiled to
+WebAssembly (`lins-render`). Both read one list of sizes and colours and place by one set of
+rules; each measures its own text. The two can be moved together or apart.
+
+```
+/trial                 the best-connected node of the default graph
+/trial?focus=<id>      this node
+/trial?graph=<name>    another graph
+```
+
+The Rust half is built by `scripts/build-render.sh` and the page then by `npm run build`. Without
+the Rust half the page shows the browser's half and says what is missing.
+
+**What it was built to show**, the two things § 7a had not seen:
+
+1. **Text while a scene is zoomed.** egui sets text at one size and keeps the result as a
+   picture, and a zoomed layer stretches that picture. So a Rust-drawn scene has three ways to
+   draw text, and the page switches between them:
+   - *stretched*: what egui's own zoom container does. Visibly soft at 200%.
+   - *sharp when it rests*: stretched while the zoom moves, set again at the new size 0.18 s
+     after it stops. What a browser does with a pinch. The default.
+   - *sharp at every frame*: set again at every frame of a zoom.
+   Lines are broken once, at full size, so a card never changes shape under the reader.
+2. **Cards on an actual graph.** Tried on a node with 55 neighbours in a graph of 7,983 nodes,
+   with 8 neighbours shown and with all 55.
+
+**What was measured**, in the Claude desktop app's browser pane (Chrome 152, Apple M2, a 765 px
+wide pane at two device pixels to one, a display drawing a frame every 6.9 ms):
+
+- **The two halves place every box the same.** Asked to place one scene with the same text
+  heights, the two sets of rules agree within a hundredth of a pixel (the page checks this on
+  every scene). With each half measuring its own text, all 9 cards and then all 56 came out with
+  the same number of lines in both.
+- **That took one correction.** egui's own wrapping counts the space after a line's last word as
+  part of the line and does not break after a hyphen. On the first scene that gave one card of
+  nine a line more than the browser's and broke others at different words. The Rust half now
+  breaks lines itself, about eighty lines of code, and measures with egui.
+- **Smoothness.** One zoom out, in and back along a fixed path, 180 steps, each half alone, one
+  run each:
+
+  | 56 cards, 62 links | middle frame | slowest frame | the Rust drawing's own work per frame |
+  |---|---|---|---|
+  | The browser | 6.9 ms | 27.3 ms | |
+  | Rust, text stretched | 6.9 ms | 7.8 ms | 0.5 ms |
+  | Rust, sharp when it rests | 6.9 ms | 7.9 ms | 0.5 ms |
+  | Rust, sharp at every frame | 6.9 ms | 13.9 ms | 1.8 ms |
+
+  With 9 cards all four ran at 6.9 ms with a slowest frame of 7.9 ms. Frame times are counted on
+  the page's own thread, so work the browser does elsewhere does not show.
+- **At rest the Rust half does nothing**: no frame drawn in three idle seconds.
+- **Weight.** The Rust half is 4.65 MB (1.9 MB compressed; the server does not compress) and 77 KB
+  of glue. The egui demo measured in § 7a was 11.4 MB.
+- **Text as data.** The browser's pane holds its 554 characters of names as text. The canvas
+  holds none. The Rust half gives what it shows as data instead (every box with its text and
+  place), and the page puts both where a test can ask: `window.linsTrial.rust()` and
+  `.browser()`.
+- **Both halves take** a drag, a scroll, a pinch, and a click on a card, which opens the scene
+  from that card in both. ⌘ with the wheel is written for both and was not tried: the tool that
+  drove the page could not hold the key.
+
+**What it answers of § 8.** Question 1 in part: panning and zooming stay smooth at 56 cards and
+62 links in both; 100 cards and 250 links were not tried, and no card can be dragged. Question 2:
+the browser half measures its cards in a hidden ruler before placing them; no jump was seen and
+none was measured for. Questions 3 to 6 (forces, cycles, link names, light cards) are untouched.
+
+**Choices made for the trial, none of them the owner's yet.** The face is Manrope, which Lins
+already carries, so that the font decision is not made by the trial. A card takes up to four lines
+where § 5.3 says three, so that no name is cut. Which neighbours are shown is decided in the page,
+by links to the other neighbours and then by name; kinds of link stand in alphabetical order. A
+side taller than 860 px goes on in a further column. A link between two neighbours is an arc
+outside their column when both stand in one column, and is counted and not drawn otherwise. A
+scene opens as wide as the pane, never below three quarters of full size. Link names are not
+drawn. The Rust half draws through WebGL; wgpu was not tried.
+
+**What it did not check.** How the text looks is for the owner's eye on his own screen: the
+session saw both halves only as screenshots at about half the pane's real sharpness, where they
+could not be told apart at rest. Not tried at all: an older laptop, a native window, memory, a
+screen reader, typing into a Rust-drawn field, emoji, and a scene of 100 cards.
 
 ---
 
@@ -503,7 +588,8 @@ Each step is useful alone and can be checked against the real graph.
    **Decided 2026-10-10**, the owner: "I'm with you."
 2. **What draws the cards**: the browser itself, a library, or a renderer in Rust (§ 7, § 7a).
    Open, and next. As first written this was part of decision 1; the owner asked why cards would
-   set the Rust renderer aside, and they do not.
+   set the Rust renderer aside, and they do not. **A trial page draws one scene both ways, side
+   by side (§ 8a); the choice is his, by eye.**
 3. The budget: aim at 40, stop at 100, bring in 8 at a time.
 4. Columns around a node as the default arrangement, forces for free scenes.
 5. Membership as chips.
@@ -514,7 +600,8 @@ Each step is useful alone and can be checked against the real graph.
 
 ## 11. What was not checked
 
-- Nothing here was built or tried. Every distance, size and count in § 5 is a starting value.
+- Nothing here was built or tried, apart from the one trial of § 8a. Every distance, size and
+  count in § 5 is a starting value.
 - No study covers how many *named* nodes can be read at once, a mid-dark canvas, text inside
   against text beside a node, or the best number of neighbours per click. Where the proposal
   gives a number for these, it is judgement from the nearest evidence.

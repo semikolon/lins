@@ -1,8 +1,8 @@
 # Lins TODO
 
 ## Next
-- [ ] **Rendering library decision**: Sigma.js (current, working) vs egui+wgpu (Rust-native GPU, WASM for browser). See CLAUDE.md § "CRITICAL: Rendering library NOT committed."
-- [ ] **UI/UX design**: User explicitly deferred — "super conscious decisions" needed before committing.
+- [ ] **Rendering library decision**: Sigma.js (current, working) vs egui+wgpu (Rust-native GPU, WASM for browser). See CLAUDE.md § "CRITICAL: Rendering library NOT committed." **A recommendation with the options compared is in `docs/display_proposal_2026_10_10.md` § 7 (2026-10-10, unruled)**: draw the scene with the browser itself, HTML cards and SVG links.
+- [ ] **UI/UX design**: User explicitly deferred — "super conscious decisions" needed before committing. **A proposal is written and waits for his rulings, one at a time: `docs/display_proposal_2026_10_10.md` § 10** (first: cards that hold the whole name, in place of dots). Nothing in it is built.
 
 ## Exploratory
 - [ ] **Context graph visualization features** (decision trace replay, temporal slider, agent-colored nodes): See `~/dotfiles/docs/context_graphs_analysis_2026_03_17.md` — gap analysis + Lins-specific opportunities in Parts 4-5.
@@ -19,7 +19,7 @@ Four gaps were seen in one run and closed the same day; two older faults were fo
 - [x] **Plugin overlays load** (`plugins = [...]`), per graph, with the config's own rules on top.
 - [x] **The server carries the page** (`rust-embed`), and `--open` opens the browser.
 
-**The owner's verdict on seeing it, the same evening**: barely legible, needs to be spaced out much more, the clustering needs work, and it shows too much at once. Fixed at once, as plain faults: the hover plate was white with pale text and was drawn on every neighbour of a hovered hub; a link's name was drawn on every link of a hovered node; the status bar wrapped in a narrow pane. **Not fixed, because it is the design question he reserved** (`CLAUDE.md`: UI/UX design NOT decided): node size and text, spacing, what a cluster is, and how much a view may hold. Research and a proposal: `docs/` (2026-10-10).
+**The owner's verdict on seeing it, the same evening**: barely legible, needs to be spaced out much more, the clustering needs work, and it shows too much at once. Fixed at once, as plain faults: the hover plate was white with pale text and was drawn on every neighbour of a hovered hub; a link's name was drawn on every link of a hovered node; the status bar wrapped in a narrow pane. **Not fixed, because it is the design question he reserved** (`CLAUDE.md`: UI/UX design NOT decided): node size and text, spacing, what a cluster is, and how much a view may hold. Research and a proposal, both written that night: `docs/research/` (three reports, word for word) and `docs/display_proposal_2026_10_10.md`.
 
 Still open from that run:
 

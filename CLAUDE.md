@@ -29,6 +29,8 @@
 
 **UI/UX design NOT decided.** User explicitly stated: "I'm not at all decided yet on the UI/UX design, will need some deep thought, I want to make super conscious decisions about it."
 
+**A proposal for both open decisions exists, unruled (2026-10-10): `docs/display_proposal_2026_10_10.md`.** After the owner judged the first real view barely legible, cramped and overwhelming, three research reports were written and kept word for word in `docs/research/` (how readable node-link diagrams are made; how Neo4j Bloom, Browser and their drawing library work; what each rendering option can do). The proposal: a *scene* of a few dozen nodes in place of a sample of the graph (aim at 40, stop at 100, 8 neighbours per widening, ranked, the rest behind counted stubs), a node as a card holding its whole name, columns around a node with forces for free scenes, membership links as chips, the legend as the control panel, a mid-dark canvas. Its § 7 recommends drawing the scene with the browser itself (HTML and SVG) and retiring Sigma from the default path; § 10 lists the owner's decisions in order. **Build none of it before he rules, and do not treat any number in it as settled**: every size and count is a starting value. Facts from the research that change what is possible: Sigma 4.0.0 came out 2026-10-08 and draws names on the GPU with no wrapping; Neo4j's drawing library may be used only with Neo4j's databases; no open library avoids collisions between name boxes.
+
 ## Architecture
 
 ### Current (working prototype)

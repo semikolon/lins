@@ -89,6 +89,39 @@ impl FalkorConnection {
         })
     }
 
+    /// Execute a read query the server itself built, without the keyword check.
+    ///
+    /// The check in `query` looks for write keywords anywhere in the text, so it
+    /// refuses a search for the word "create". A query built here carries a
+    /// reader's words only inside a string literal made by `view::cypher_str`,
+    /// which cannot end the literal, so the check is not needed and would be wrong.
+    pub async fn query_built(
+        &self,
+        graph: &str,
+        cypher: &str,
+    ) -> Result<QueryResult, ConnectionError> {
+        let start = Instant::now();
+        let raw = self.query_raw(graph, cypher).await?;
+        let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+        let (nodes, edges) = parse_graph_result(&raw)?;
+        Ok(QueryResult {
+            nodes,
+            edges,
+            query_time_ms: elapsed,
+            source_graph: graph.to_string(),
+        })
+    }
+
+    /// Execute a query whose every column is a whole number, and return the rows.
+    pub async fn query_int_rows(
+        &self,
+        graph: &str,
+        cypher: &str,
+    ) -> Result<Vec<Vec<i64>>, ConnectionError> {
+        let raw = self.query_raw(graph, cypher).await?;
+        Ok(parse_int_rows(&raw))
+    }
+
     /// Execute a raw Cypher query and return the unparsed Redis Value.
     /// Uses verbose mode so labels and property keys are returned as strings.
     #[instrument(skip(self), fields(graph = %graph))]
@@ -171,6 +204,8 @@ fn parse_graph_result(
 ) -> Result<(Vec<GraphNode>, Vec<GraphEdge>), ConnectionError> {
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
+    let mut seen_nodes = std::collections::HashSet::new();
+    let mut seen_edges = std::collections::HashSet::new();
 
     let top_array = match value {
         Value::Array(arr) => arr,
@@ -197,11 +232,11 @@ fn parse_graph_result(
                 // Try to identify what this column value is by looking for
                 // marker fields: "labels" → node, "type" + "src_node" → edge
                 if let Some(node) = parse_verbose_node(col) {
-                    if !nodes.iter().any(|n: &GraphNode| n.id == node.id) {
+                    if seen_nodes.insert(node.id) {
                         nodes.push(node);
                     }
                 } else if let Some(edge) = parse_verbose_edge(col) {
-                    if !edges.iter().any(|e: &GraphEdge| e.id == edge.id) {
+                    if seen_edges.insert(edge.id) {
                         edges.push(edge);
                     }
                 }
@@ -379,6 +414,28 @@ fn value_to_i64(value: &Value) -> Option<i64> {
 }
 
 /// Extract a count value from a verbose FalkorDB query result.
+/// The rows of a result whose columns are whole numbers. A row holding
+/// anything else is left out.
+fn parse_int_rows(value: &Value) -> Vec<Vec<i64>> {
+    let mut out = Vec::new();
+    if let Value::Array(top) = value {
+        if let Some(Value::Array(rows)) = top.get(1) {
+            for row in rows {
+                if let Value::Array(cols) = row {
+                    let ints: Vec<i64> = cols
+                        .iter()
+                        .filter_map(|c| if let Value::Int(n) = c { Some(*n) } else { None })
+                        .collect();
+                    if ints.len() == cols.len() && !ints.is_empty() {
+                        out.push(ints);
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
 fn extract_count_from_result(value: &Value) -> usize {
     if let Value::Array(top) = value {
         if top.len() >= 2 {
@@ -413,5 +470,20 @@ mod tests {
         assert!(validate_read_only("MERGE (n:Test {name: 'x'})").is_err());
         assert!(validate_read_only("MATCH (n) REMOVE n.name").is_err());
         assert!(validate_read_only("DROP INDEX ON :Test(name)").is_err());
+    }
+
+    #[test]
+    fn int_rows_are_read_and_a_row_with_anything_else_is_left_out() {
+        let raw = Value::Array(vec![
+            Value::Array(vec![]),
+            Value::Array(vec![
+                Value::Array(vec![Value::Int(1), Value::Int(2)]),
+                Value::Array(vec![Value::Int(3), Value::Nil]),
+                Value::Array(vec![Value::Int(5), Value::Int(8)]),
+            ]),
+            Value::Array(vec![]),
+        ]);
+        assert_eq!(parse_int_rows(&raw), vec![vec![1, 2], vec![5, 8]]);
+        assert!(parse_int_rows(&Value::Nil).is_empty());
     }
 }

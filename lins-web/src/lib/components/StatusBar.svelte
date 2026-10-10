@@ -1,5 +1,28 @@
 <script lang="ts">
-  import { currentGraph, graphData, isLoading } from '$lib/stores/graph';
+  import { currentGraph, graphData, isLoading, showAll, view, viewInfo } from '$lib/stores/graph';
+  import { setShowAll } from '$lib/explore';
+  import { hiddenSummary } from '$lib/view';
+  import type { GraphView, ViewInfo } from '$lib/types';
+
+  let info = $state<ViewInfo | null>(null);
+  let all = $state(false);
+  let currentView = $state<GraphView | null>(null);
+  viewInfo.subscribe((v) => { info = v; });
+  showAll.subscribe((a) => { all = a; });
+  view.subscribe((v) => { currentView = v; });
+
+  const MODE_WORDS: Record<string, string> = {
+    all: 'the whole graph',
+    overview: 'its best-connected nodes',
+    around: 'one neighbourhood',
+    query: 'a query',
+  };
+
+  function shown(): string {
+    if (!info) return `${nodeCount} nodes, ${edgeCount} edges`;
+    const of = info.truncated || info.hidden > 0 ? ` of ${info.total.toLocaleString('en')}` : '';
+    return `${nodeCount.toLocaleString('en')}${of} nodes, ${edgeCount.toLocaleString('en')} links · ${MODE_WORDS[info.mode] ?? info.mode}`;
+  }
 
   let graph = $state<string | null>(null);
   let nodeCount = $state(0);
@@ -30,7 +53,14 @@
       <span class="divider">|</span>
       <span class="status-text">Graph: <strong>{graph}</strong></span>
       <span class="divider">|</span>
-      <span class="status-text">{nodeCount} nodes, {edgeCount} edges</span>
+      <span class="status-text">{shown()}</span>
+      {#if hiddenSummary(currentView) !== ''}
+        <span class="divider">|</span>
+        <label class="hidden-toggle" title={`The view leaves out: ${hiddenSummary(currentView)}`}>
+          <input type="checkbox" checked={all} onchange={(e) => setShowAll(e.currentTarget.checked)} />
+          show hidden{info && !all && info.hidden > 0 ? ` (${info.hidden.toLocaleString('en')})` : ''}
+        </label>
+      {/if}
     {/if}
   </div>
   <div class="status-right">
@@ -43,6 +73,20 @@
 </div>
 
 <style>
+  .hidden-toggle {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim, #94a3b8);
+    cursor: pointer;
+  }
+
+  .hidden-toggle input {
+    accent-color: var(--accent, #7c3aed);
+  }
+
   .status-bar {
     display: flex;
     align-items: center;

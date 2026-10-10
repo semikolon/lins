@@ -17,6 +17,11 @@ host = "0.0.0.0"               # "0.0.0.0" for LAN access, "127.0.0.1" for local
 # ─── Plugins ──────────────────────────────────────────────────────────────────
 # Plugin config overlays, loaded in order. Later plugins override earlier ones.
 # User config (this file) always takes final precedence.
+# A path is taken from the folder this file is in, unless it is absolute.
+# An overlay holds [styling] and [display] tables like the ones below, and may open with
+#     graphs = ["my_graph", "my_prefix_*"]
+# to apply only to those graphs. NOTE: a top-level key such as `plugins` must stand above
+# the first [table] in this file, or TOML reads it as part of that table.
 # plugins = [
 #     "plugins/graphiti/lins-graphiti.toml",
 # ]
@@ -32,7 +37,8 @@ edge_color = "#4a5568"          # Default edge color
 # [styling.labels.Entity]
 # color = "#2d6a4f"             # Forest green
 # size = "property:degree"      # Size by connection count, or a fixed number (e.g. 10)
-# caption = "name"              # Property to display as node label
+# caption = "name"              # Property to display as node label; or several, tried in
+#                               # order: caption = ["short_title", "text"]
 # shape = "circle"              # circle, diamond, hexagon, square
 
 # [styling.labels.Episodic]
@@ -50,8 +56,26 @@ edge_color = "#4a5568"          # Default edge color
 # Control which properties appear in the property panel.
 [display.properties]
 # show = ["name", "summary", "created_at"]   # Explicit allowlist (empty = show all)
-hide = ["name_embedding", "fact_embedding", "group_id", "uuid"]   # Hide vectors & internal fields
+hide = ["group_id", "uuid"]     # Internal fields. Vectors are left out without being named.
 # date_format = "%Y-%m-%d %H:%M"
+
+# Which nodes and relationships a view leaves out, and how much it loads at once.
+# What is left out comes back with "show hidden" in the status bar.
+# [[display.nodes.hide]]
+# label = "Session"                          # a whole label
+#
+# [[display.nodes.hide]]
+# label = "Claim"                            # or the nodes whose key holds one of the values
+# key = "kind"
+# values = ["scaffolding"]
+#
+# [display.relationships]
+# hide = ["SIMILAR_TO"]
+#
+# [display.nodes]
+# max_nodes = 1500        # a graph with at most this many visible nodes is loaded whole
+# overview = 150          # a larger graph opens on this many of its best-connected nodes
+# neighbours = 60         # one widening brings in at most this many neighbours
 
 # ─── Search ───────────────────────────────────────────────────────────────────
 # LLM endpoint for natural language search (optional, v1.5).

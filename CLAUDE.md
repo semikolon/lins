@@ -12,6 +12,8 @@
 
 **Working v1 prototype**: Backend connects to live FalkorDB (16 graphs discovered), parses nodes/edges, serves REST API. SvelteKit frontend renders graphs with Sigma.js. Force-directed layout, click-to-select, property panel, graph selector, search bar, status bar.
 
+**Added 2026-10-10, measured against a real graph of 7,780 nodes** (a session in another project; the settings for that graph live in that project, not here): plugin overlays load and apply per graph (`plugins = [...]`, `graphs = ["name", "prefix_*"]`, the user's config on top) · a large graph opens on its best-connected nodes (`GET /api/graphs/{name}/data`), a node opens on its neighbourhood (`/around/{id}`), words find nodes (`/find?q=`) · `caption` names a node, one key or several · a view can hide kinds of node and link, with a switch to bring them back · vectors are left out by what they are, not by name · the server carries the built page (`rust-embed`) and takes `--host` and `--open` · the connection can come from the environment (`LINS_FALKORDB_*`, then `FALKORDB_*`). Two faults found by running it, both fixed: FalkorDB returns a vector as TEXT when a whole node is returned, so the check by type never fired; and the schema sampler read a node's reply fields as its properties. None of this is a decision about the rendering library or the UI design: Sigma was kept as it was, and everything visual comes from settings. Open after it: `TODO.md`.
+
 **CRITICAL: Rendering library NOT committed.** User is actively evaluating:
 - Sigma.js (current, working) — fast, focused, but limited visual control for Bloom-quality UX
 - egui + wgpu (proposed) — Rust-native GPU rendering, compiles to WASM for browser, full pixel control
@@ -123,13 +125,19 @@ Full specifications at `specs/graph-explorer/`:
 ## Running
 
 ```bash
-# Backend
+# One binary that carries the page (build the page first; it is embedded at compile time)
+(cd lins-web && npm install && npm run build) && cargo build --release -p lins-server
+target/release/lins-server serve --config lins.toml --host 127.0.0.1 --open
+
+# While working on the page: the two apart
 cargo run --bin lins-server -- serve --port 3334 --config lins.toml
-
-# Frontend (current SvelteKit prototype)
-cd lins-web && npm run dev -- --port 5173
-
-# Open http://localhost:5173
+cd lins-web && npm run dev -- --port 5173      # proxies /api to 3334; open http://localhost:5173
 ```
+
+**After changing the page, `touch lins-server/src/main.rs` before rebuilding the server**: the compiler does not see that the embedded files changed, and the old page is served with no error.
+
+**The server has no sign-in and shows every graph in the database.** The config's default host is `0.0.0.0`; pass `--host 127.0.0.1` unless the network is meant to see it.
+
+**A read query the server builds itself goes through `query_built`, never `query`**: `query` refuses any text holding a write keyword, so it refused a search for the word *create*. A reader's words enter a built query only through `view::cypher_str`.
 
 Note: port 3000 is taken by brf-auto Rails app. Use 3334 or configure in lins.toml.

@@ -1,8 +1,20 @@
 <script lang="ts">
   import { get } from 'svelte/store';
-  import { currentGraph, graphData, isLoading } from '$lib/stores/graph';
-  import { searchVocabulary, executeQuery } from '$lib/api';
-  import type { Suggestion, QueryResult } from '$lib/types';
+  import { currentGraph, graphData, isLoading, showAll, view, viewInfo } from '$lib/stores/graph';
+  import { searchVocabulary, executeQuery, findNodes } from '$lib/api';
+  import { merged, openAround } from '$lib/explore';
+  import { labelColor, nodeName } from '$lib/view';
+  import type { GraphNode, Suggestion, QueryResult } from '$lib/types';
+
+  /** Nodes whose name holds the words typed. Choosing one opens its neighbourhood. */
+  let nodeHits = $state<GraphNode[]>([]);
+  let findSeq = 0;
+
+  async function chooseNode(node: GraphNode) {
+    isOpen = false;
+    query = nodeName(node, get(view), 80);
+    await openAround(node.id);
+  }
 
   let query = $state('');
   let suggestions = $state<Suggestion[]>([]);
@@ -66,21 +78,27 @@
     if (debounceTimer) clearTimeout(debounceTimer);
     if (query.length < 1) {
       suggestions = [];
+      nodeHits = [];
       isOpen = false;
       return;
     }
     debounceTimer = setTimeout(async () => {
       let graphName: string | null = null;
       graphName = get(currentGraph);
-      try {
-        suggestions = await searchVocabulary(query, graphName || undefined);
-        isOpen = suggestions.length > 0;
-        activeIndex = -1;
-      } catch {
-        suggestions = [];
-        isOpen = false;
-      }
-    }, 150);
+      const words = query.trim();
+      const seq = ++findSeq;
+      const [vocabulary, found] = await Promise.all([
+        searchVocabulary(query, graphName || undefined).catch(() => [] as Suggestion[]),
+        graphName && words.length >= 3
+          ? findNodes(graphName, words, get(showAll)).then((r) => r.nodes).catch(() => [] as GraphNode[])
+          : Promise.resolve([] as GraphNode[]),
+      ]);
+      if (seq !== findSeq) return; // a later keystroke has already answered
+      suggestions = vocabulary;
+      nodeHits = found.slice(0, 12);
+      isOpen = suggestions.length > 0 || nodeHits.length > 0;
+      activeIndex = -1;
+    }, 200);
   }
 
   async function selectSuggestion(suggestion: Suggestion) {
@@ -95,17 +113,8 @@
     try {
       const result: QueryResult = await executeQuery(graphName, suggestion.cypher);
       // Additive merge: add new nodes/edges to existing data
-      graphData.update((existing) => {
-        if (!existing) return result;
-        const existingNodeIds = new Set(existing.nodes.map((n) => n.id));
-        const existingEdgeIds = new Set(existing.edges.map((e) => e.id));
-        return {
-          nodes: [...existing.nodes, ...result.nodes.filter((n) => !existingNodeIds.has(n.id))],
-          edges: [...existing.edges, ...result.edges.filter((e) => !existingEdgeIds.has(e.id))],
-          query_time_ms: result.query_time_ms,
-          source_graph: result.source_graph,
-        };
-      });
+      graphData.update((existing) => merged(existing, result));
+      viewInfo.update((v) => (v ? { ...v, truncated: true } : v));
     } catch (err) {
       console.error('Query failed:', err);
     } finally {
@@ -117,7 +126,8 @@
     if (!isOpen) {
       if (e.key === 'Enter' && query.length > 0) {
         e.preventDefault();
-        await searchAsProperty();
+        if (nodeHits.length > 0) await chooseNode(nodeHits[0]);
+        else await searchAsProperty();
       }
       return;
     }
@@ -134,6 +144,8 @@
       e.preventDefault();
       if (activeIndex >= 0 && activeIndex < flat.length) {
         await selectSuggestion(flat[activeIndex]);
+      } else if (nodeHits.length > 0) {
+        await chooseNode(nodeHits[0]);
       } else {
         await searchAsProperty();
       }
@@ -191,15 +203,25 @@
       oninput={onInput}
       onkeydown={onKeydown}
       onblur={onBlur}
-      onfocus={() => { if (suggestions.length > 0) isOpen = true; }}
+      onfocus={() => { if (suggestions.length > 0 || nodeHits.length > 0) isOpen = true; }}
       class="search-input"
     />
   </div>
 
-  {#if isOpen && suggestions.length > 0}
+  {#if isOpen && (suggestions.length > 0 || nodeHits.length > 0)}
     {@const grouped = groupSuggestions(suggestions)}
     {@const flat = flatSuggestions()}
     <div class="dropdown">
+      {#if nodeHits.length > 0}
+        <div class="group-header">Nodes · Enter opens the first</div>
+        {#each nodeHits as hit}
+          <button class="suggestion" onmousedown={() => chooseNode(hit)}>
+            <span class="node-dot" style:background-color={labelColor(hit.labels[0] || '', get(view), [])}></span>
+            <span class="suggestion-value">{nodeName(hit, get(view), 90)}</span>
+            <span class="node-label">{hit.labels[0] || ''}</span>
+          </button>
+        {/each}
+      {/if}
       {#each grouped as group}
         <div class="group-header">{group.label}</div>
         {#each group.items as item}
@@ -223,6 +245,20 @@
 </div>
 
 <style>
+  .node-dot {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .node-label {
+    margin-left: auto;
+    padding-left: 12px;
+    font-size: 11px;
+    color: var(--text-dim, #94a3b8);
+  }
+
   .search-bar {
     position: relative;
     width: 100%;

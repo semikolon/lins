@@ -1,16 +1,12 @@
 <script lang="ts">
   import { get } from 'svelte/store';
-  import { selectedNode, selectedEdge, graphData } from '$lib/stores/graph';
-  import type { GraphNode, GraphEdge, PropertyValue, QueryResult } from '$lib/types';
+  import { selectedNode, selectedEdge, graphData, view } from '$lib/stores/graph';
+  import { labelColor, nodeFullName, relColor, shownProperty } from '$lib/view';
+  import { expandAround, openAround } from '$lib/explore';
+  import type { GraphNode, GraphEdge, GraphView, PropertyValue, QueryResult } from '$lib/types';
 
-  const HIDDEN_SUFFIXES = ['_embedding'];
-  const HIDDEN_KEYS = new Set(['group_id', 'uuid']);
-
-  const LABEL_COLORS: Record<string, string> = {};
-  const ALL_COLORS = [
-    '#2d6a4f', '#7c3aed', '#b45309', '#0e7490', '#be185d',
-    '#4338ca', '#059669', '#d97706', '#7c2d12', '#1d4ed8',
-  ];
+  let currentView = $state<GraphView | null>(null);
+  view.subscribe((v) => { currentView = v; });
 
   let node = $state<GraphNode | null>(null);
   let edge = $state<GraphEdge | null>(null);
@@ -53,17 +49,20 @@
   }
 
   function getDisplayName(n: GraphNode): string {
-    const name = n.properties['name'];
-    if (typeof name === 'string') return name;
-    return n.labels[0] || `Node ${n.id}`;
+    return nodeFullName(n, get(view));
   }
 
   function shouldShow(key: string): boolean {
-    if (HIDDEN_KEYS.has(key)) return false;
-    for (const suffix of HIDDEN_SUFFIXES) {
-      if (key.endsWith(suffix)) return false;
-    }
-    return true;
+    return shownProperty(key, get(view));
+  }
+
+  /** The names of a link's two ends, when both are on the canvas. */
+  function ends(e: GraphEdge): { from: string; to: string } | null {
+    const data: QueryResult | null = get(graphData);
+    if (!data) return null;
+    const from = data.nodes.find((n) => n.id === e.source_id);
+    const to = data.nodes.find((n) => n.id === e.target_id);
+    return from && to ? { from: getDisplayName(from), to: getDisplayName(to) } : null;
   }
 
   function formatValue(val: PropertyValue): string {
@@ -101,11 +100,7 @@
   }
 
   function getLabelColor(label: string): string {
-    if (!LABEL_COLORS[label]) {
-      const idx = Object.keys(LABEL_COLORS).length;
-      LABEL_COLORS[label] = ALL_COLORS[idx % ALL_COLORS.length];
-    }
-    return LABEL_COLORS[label];
+    return labelColor(label, currentView, []);
   }
 
   function navigateToNode(nodeId: number) {
@@ -141,6 +136,14 @@
     </div>
 
     <div class="panel-content">
+      <div class="moves">
+        <button class="move-btn" onclick={() => node && expandAround(node.id)} title="Add this node's neighbours to the view (or double-click the node)">
+          Widen from here
+        </button>
+        <button class="move-btn" onclick={() => node && openAround(node.id)} title="Show only this node and its neighbours">
+          Only this neighbourhood
+        </button>
+      </div>
       <section class="properties">
         <h3 class="section-title">Properties</h3>
         {#each getProperties(node) as [key, val]}
@@ -180,7 +183,7 @@
   {:else if edge}
     <div class="panel-header">
       <div class="header-info">
-        <span class="label-dot" style:background-color="#4a5568"></span>
+        <span class="label-dot" style:background-color={relColor(edge.relationship_type, currentView)}></span>
         <div>
           <div class="header-label">Relationship</div>
           <div class="header-name">{edge.relationship_type}</div>
@@ -194,6 +197,14 @@
     </div>
 
     <div class="panel-content">
+      {#if ends(edge)}
+        {@const pair = ends(edge)!}
+        <section class="ends">
+          <button class="end-row" onclick={() => edge && navigateToNode(edge.source_id)}>{pair.from}</button>
+          <div class="end-arrow">{edge.relationship_type.toLowerCase().replace(/_/g, ' ')} ↓</div>
+          <button class="end-row" onclick={() => edge && navigateToNode(edge.target_id)}>{pair.to}</button>
+        </section>
+      {/if}
       <section class="properties">
         <h3 class="section-title">Properties</h3>
         {#each getProperties(edge) as [key, val]}
@@ -211,6 +222,54 @@
 </div>
 
 <style>
+  .moves {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px 0;
+  }
+
+  .move-btn {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: box-shadow 0.1s, border-color 0.1s;
+  }
+
+  .move-btn:hover {
+    border-color: var(--accent, #7c3aed);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.2);
+  }
+
+  .ends {
+    padding: 12px 16px 0;
+  }
+
+  .end-row {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .end-arrow {
+    padding: 6px 10px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--text-dim, #94a3b8);
+  }
+
   .panel {
     width: 320px;
     min-width: 320px;

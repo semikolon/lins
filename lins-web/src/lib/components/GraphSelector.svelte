@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { currentGraph, availableGraphs, schema, graphData, isLoading, error, selectedNode, selectedEdge } from '$lib/stores/graph';
-  import { fetchSchema, fetchGraphData } from '$lib/api';
+  import { currentGraph, availableGraphs } from '$lib/stores/graph';
+  import { loadGraph } from '$lib/explore';
   import type { GraphInfo } from '$lib/types';
 
   let isOpen = $state(false);
@@ -17,25 +17,7 @@
   async function selectGraph(name: string) {
     isOpen = false;
     if (name === current) return;
-
-    currentGraph.set(name);
-    selectedNode.set(null);
-    selectedEdge.set(null);
-    isLoading.set(true);
-    error.set(null);
-
-    try {
-      const [s, d] = await Promise.all([
-        fetchSchema(name),
-        fetchGraphData(name),
-      ]);
-      schema.set(s);
-      graphData.set(d);
-    } catch (err) {
-      error.set(err instanceof Error ? err.message : 'Failed to load graph');
-    } finally {
-      isLoading.set(false);
-    }
+    await loadGraph(name);
   }
 
   function toggle() {

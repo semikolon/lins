@@ -5,70 +5,40 @@
   import PropertyPanel from '$lib/components/PropertyPanel.svelte';
   import GraphSelector from '$lib/components/GraphSelector.svelte';
   import StatusBar from '$lib/components/StatusBar.svelte';
-  import {
-    currentGraph,
-    graphData,
-    schema,
-    availableGraphs,
-    isLoading,
-    error,
-  } from '$lib/stores/graph';
-  import { fetchGraphs, fetchSchema, fetchGraphData } from '$lib/api';
+  import { availableGraphs, graphData, isLoading, error } from '$lib/stores/graph';
+  import { fetchGraphs, fetchDefaultGraph } from '$lib/api';
+  import { loadGraph } from '$lib/explore';
 
   let loading = $state(true);
   let errMsg = $state<string | null>(null);
 
+  /** True once a graph has been drawn. From then on the canvas stays mounted while more is
+   *  loaded, so that widening a view moves nothing and a failed request loses nothing. */
+  let hasData = $state(false);
+
   isLoading.subscribe((l) => { loading = l; });
   error.subscribe((e) => { errMsg = e; });
+  graphData.subscribe((d) => { hasData = d !== null; });
 
-  onMount(async () => {
+  /** Open the graph the config names, or failing that the first one. */
+  async function start() {
     isLoading.set(true);
     error.set(null);
-
     try {
-      const graphs = await fetchGraphs();
+      const [graphs, preferred] = await Promise.all([fetchGraphs(), fetchDefaultGraph().catch(() => null)]);
       availableGraphs.set(graphs);
-
-      if (graphs.length > 0) {
-        const first = graphs[0].name;
-        currentGraph.set(first);
-
-        const [s, d] = await Promise.all([
-          fetchSchema(first),
-          fetchGraphData(first),
-        ]);
-        schema.set(s);
-        graphData.set(d);
-      }
+      const first = graphs.find((g) => g.name === preferred)?.name ?? graphs[0]?.name;
+      if (first) await loadGraph(first);
     } catch (err) {
       error.set(err instanceof Error ? err.message : 'Failed to connect to Lins server');
     } finally {
       isLoading.set(false);
     }
-  });
-
-  async function retry() {
-    error.set(null);
-    isLoading.set(true);
-    try {
-      const graphs = await fetchGraphs();
-      availableGraphs.set(graphs);
-      if (graphs.length > 0) {
-        const first = graphs[0].name;
-        currentGraph.set(first);
-        const [s, d] = await Promise.all([
-          fetchSchema(first),
-          fetchGraphData(first),
-        ]);
-        schema.set(s);
-        graphData.set(d);
-      }
-    } catch (err) {
-      error.set(err instanceof Error ? err.message : 'Failed to connect');
-    } finally {
-      isLoading.set(false);
-    }
   }
+
+  onMount(start);
+
+  const retry = start;
 </script>
 
 <div class="explorer">
@@ -78,10 +48,15 @@
   </header>
 
   <main class="content">
-    {#if loading && !errMsg}
-      <div class="center-overlay">
-        <div class="spinner"></div>
-        <p class="loading-text">Connecting to FalkorDB...</p>
+    {#if hasData}
+      <div class="canvas-area">
+        <GraphCanvas />
+        {#if errMsg}
+          <div class="notice" role="alert">
+            {errMsg}
+            <button class="notice-close" onclick={() => error.set(null)} aria-label="Dismiss">×</button>
+          </div>
+        {/if}
       </div>
     {:else if errMsg}
       <div class="center-overlay">
@@ -90,8 +65,9 @@
         <button class="retry-btn" onclick={retry}>Retry</button>
       </div>
     {:else}
-      <div class="canvas-area">
-        <GraphCanvas />
+      <div class="center-overlay">
+        <div class="spinner"></div>
+        <p class="loading-text">{loading ? 'Connecting to FalkorDB...' : 'No graph to show.'}</p>
       </div>
     {/if}
     <PropertyPanel />
@@ -101,6 +77,28 @@
 </div>
 
 <style>
+  .notice {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    max-width: 60%;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #f87171;
+    background: var(--surface);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-radius: 6px;
+    z-index: 5;
+  }
+
+  .notice-close {
+    margin-left: 8px;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
   .explorer {
     display: grid;
     grid-template-rows: 56px 1fr 28px;

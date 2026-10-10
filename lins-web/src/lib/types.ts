@@ -48,3 +48,53 @@ export interface Suggestion {
   cypher: string;
   count?: number;
 }
+
+export interface LabelStyle {
+  color?: string | null;
+  /** The property that names a node: one key, or several tried in order. */
+  caption?: string | string[] | null;
+  size?: number | string | null;
+}
+
+export interface RelationshipStyle {
+  color?: string | null;
+  label?: string | null;
+  style?: string | null;
+}
+
+export interface NodeHideRule {
+  label: string;
+  key?: string | null;
+  values: string[];
+}
+
+/** How one graph is shown: the server's config with its overlays laid on top. */
+export interface GraphView {
+  graph: string;
+  styling: {
+    labels: Record<string, LabelStyle>;
+    relationships: Record<string, RelationshipStyle>;
+  };
+  display: {
+    properties: { show: string[]; hide: string[] };
+    nodes: { hide: NodeHideRule[]; max_nodes?: number | null; overview?: number | null; neighbours?: number | null };
+    relationships: { hide: string[] };
+  };
+}
+
+/** A view's nodes and links, with what it left out. */
+export interface ViewResult extends QueryResult {
+  total_node_count: number;
+  hidden_node_count: number;
+  mode: 'all' | 'overview' | 'around';
+  truncated: boolean;
+  center?: number;
+  neighbour_count?: number;
+}
+
+export interface ViewInfo {
+  mode: 'all' | 'overview' | 'around' | 'query';
+  total: number;
+  hidden: number;
+  truncated: boolean;
+}

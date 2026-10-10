@@ -1,5 +1,4 @@
 use crate::connection::{ConnectionError, FalkorConnection};
-use crate::graph_types::PropertyValue;
 use chrono::{DateTime, Utc};
 use redis::Value;
 use serde::{Deserialize, Serialize};
@@ -136,117 +135,49 @@ async fn query_count(
 }
 
 /// Sample properties from nodes of a given label.
-/// Uses verbose (non-compact) mode to get actual property names.
+///
+/// The nodes are read with the same parser every other query uses, and their
+/// properties counted. (An earlier version walked the raw reply by shape and
+/// took a node's own three fields, `id`, `labels` and `properties`, for its
+/// properties, so every label was recorded as having exactly those three.)
 async fn sample_label_properties(
     conn: &FalkorConnection,
     graph: &str,
     cypher: &str,
 ) -> Result<Vec<PropertyInfo>, ConnectionError> {
-    let raw = conn.query_raw_verbose(graph, cypher).await?;
+    let sampled = conn.query_built(graph, cypher).await?;
+    Ok(properties_of(&sampled.nodes))
+}
 
-    // In verbose mode, node results include property names directly.
-    // The result format is: [header, data_rows, stats]
-    // Each data row for a node query contains a node object.
-    //
-    // We need to parse the verbose node format to extract properties.
-    // Verbose node: a nested structure with property key names (not IDs).
-
+/// The properties a set of nodes carries, with a few sample values of each.
+pub(crate) fn properties_of(nodes: &[crate::graph_types::GraphNode]) -> Vec<PropertyInfo> {
     let mut property_map: HashMap<String, PropertyInfo> = HashMap::new();
-
-    if let Value::Array(top) = &raw {
-        if top.len() >= 2 {
-            if let Value::Array(rows) = &top[1] {
-                for row in rows {
-                    if let Value::Array(cols) = row {
-                        for col in cols {
-                            // In verbose mode, a node is returned as an array of properties
-                            // where each property is [key_name, value]
-                            extract_verbose_node_properties(col, &mut property_map);
-                        }
-                    }
-                }
+    for node in nodes {
+        for (key, val) in &node.properties {
+            let is_vec = val.is_vector();
+            let entry = property_map.entry(key.clone()).or_insert_with(|| PropertyInfo {
+                key: key.clone(),
+                value_type: val.type_name().to_string(),
+                sample_values: Vec::new(),
+                is_vector: is_vec.is_some(),
+                vector_dimensions: is_vec,
+            });
+            if is_vec.is_some() {
+                continue;
+            }
+            let sample = val.display_short();
+            if entry.sample_values.len() < 5
+                && !sample.is_empty()
+                && sample != "null"
+                && !entry.sample_values.contains(&sample)
+            {
+                entry.sample_values.push(sample);
             }
         }
     }
-
-    Ok(property_map.into_values().collect())
-}
-
-/// Extract properties from a verbose-mode node result.
-///
-/// Verbose node format can vary by FalkorDB version. Common formats:
-/// - Array of [key, type, value] triples
-/// - Nested structure with property map
-///
-/// We try multiple parsing strategies.
-fn extract_verbose_node_properties(
-    value: &Value,
-    props: &mut HashMap<String, PropertyInfo>,
-) {
-    // Strategy 1: Node as array [id, labels, properties_list]
-    if let Value::Array(node_arr) = value {
-        // Look for property arrays in the node structure
-        for element in node_arr {
-            if let Value::Array(prop_or_subarray) = element {
-                // Check if this looks like a property triple [key, type, value]
-                if prop_or_subarray.len() == 2 || prop_or_subarray.len() == 3 {
-                    if let Some(key) = value_to_string(&prop_or_subarray[0]) {
-                        // Looks like a property entry
-                        let val = if prop_or_subarray.len() == 3 {
-                            redis_to_property_value(&prop_or_subarray[2])
-                        } else {
-                            redis_to_property_value(&prop_or_subarray[1])
-                        };
-
-                        let is_vec = val.is_vector();
-                        let type_name = val.type_name().to_string();
-                        let sample = val.display_short();
-
-                        let entry = props.entry(key.clone()).or_insert_with(|| PropertyInfo {
-                            key,
-                            value_type: type_name.clone(),
-                            sample_values: Vec::new(),
-                            is_vector: is_vec.is_some(),
-                            vector_dimensions: is_vec,
-                        });
-
-                        if entry.sample_values.len() < 5 && !sample.is_empty() && sample != "null" {
-                            if !entry.sample_values.contains(&sample) {
-                                entry.sample_values.push(sample);
-                            }
-                        }
-                    }
-                } else {
-                    // Recurse into sub-arrays
-                    for sub in prop_or_subarray {
-                        extract_verbose_node_properties(sub, props);
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// Convert a Redis value to a PropertyValue for schema sampling.
-fn redis_to_property_value(value: &Value) -> PropertyValue {
-    match value {
-        Value::Nil => PropertyValue::Null,
-        Value::Int(i) => PropertyValue::Integer(*i),
-        Value::Double(f) => PropertyValue::Float(*f),
-        Value::Boolean(b) => PropertyValue::Boolean(*b),
-        Value::BulkString(bytes) => {
-            match String::from_utf8(bytes.clone()) {
-                Ok(s) => PropertyValue::String(s),
-                Err(_) => PropertyValue::Null,
-            }
-        }
-        Value::SimpleString(s) => PropertyValue::String(s.clone()),
-        Value::Array(items) => {
-            let parsed: Vec<PropertyValue> = items.iter().map(redis_to_property_value).collect();
-            PropertyValue::Array(parsed)
-        }
-        _ => PropertyValue::Null,
-    }
+    let mut properties: Vec<PropertyInfo> = property_map.into_values().collect();
+    properties.sort_by(|a, b| a.key.cmp(&b.key));
+    properties
 }
 
 fn value_to_string(value: &Value) -> Option<String> {
@@ -265,5 +196,34 @@ fn value_to_i64(value: &Value) -> Option<i64> {
             .ok()
             .and_then(|s| s.parse().ok()),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graph_types::{GraphNode, PropertyValue};
+
+    #[test]
+    fn a_labels_properties_are_the_nodes_own_and_never_the_reply_fields() {
+        let node = |id, props: &[(&str, PropertyValue)]| GraphNode {
+            id,
+            labels: vec!["Claim".into()],
+            properties: props.iter().map(|(k, v)| (k.to_string(), v.clone())).collect(),
+        };
+        let text = |s: &str| PropertyValue::String(s.to_string());
+        let found = properties_of(&[
+            node(1, &[("claim_id", text("c1")), ("text", text("one")), ("embedding", text("[1, 2, 3, 4, 5, 6, 7, 8, 9]"))]),
+            node(2, &[("claim_id", text("c2")), ("confidence", PropertyValue::Float(0.5))]),
+        ]);
+        let keys: Vec<&str> = found.iter().map(|p| p.key.as_str()).collect();
+        assert_eq!(keys, vec!["claim_id", "confidence", "embedding", "text"]);
+        assert!(!keys.contains(&"id") && !keys.contains(&"labels") && !keys.contains(&"properties"));
+        let embedding = found.iter().find(|p| p.key == "embedding").unwrap();
+        assert!(embedding.is_vector);
+        assert_eq!(embedding.vector_dimensions, Some(9));
+        assert!(embedding.sample_values.is_empty(), "a vector is never a sample value");
+        let claim_id = found.iter().find(|p| p.key == "claim_id").unwrap();
+        assert_eq!(claim_id.sample_values, vec!["c1", "c2"]);
     }
 }

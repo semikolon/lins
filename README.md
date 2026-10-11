@@ -61,7 +61,7 @@ and, in `lins-web`, `npm run dev` (which proxies `/api` to port 3334), then open
 `http://localhost:5173`.
 
 **The server has no sign-in and shows every graph in the database.** `--host 127.0.0.1` keeps it
-to your own machine; the config's default, `0.0.0.0`, opens it to your network.
+to your own machine, which is also the default; `0.0.0.0` opens it to your network.
 
 **Where FalkorDB is can come from the environment** in place of the config file, so that a host
 name or a password need not be written into a file you share: `LINS_FALKORDB_HOST`,
@@ -99,7 +99,7 @@ See [`lins.toml.example`](lins.toml.example) for all options.
 [connection]
 host = "127.0.0.1"
 port = 6380
-password = "falkordb"
+# the password is better given as LINS_FALKORDB_PASSWORD in the environment
 
 [server]
 port = 3000

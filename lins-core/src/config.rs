@@ -293,7 +293,9 @@ fn default_server_port() -> u16 {
 }
 
 fn default_server_host() -> String {
-    "0.0.0.0".to_string()
+    // This machine only. The server has no sign-in and shows every graph in the
+    // database, so reaching it from the network is something a person asks for.
+    "127.0.0.1".to_string()
 }
 
 fn default_font() -> String {
@@ -566,7 +568,7 @@ pub fn generate_default_config(schema: &GraphSchema) -> LinsConfig {
         connection: ConnectionConfig {
             host: default_host(),
             port: default_port(),
-            password: Some("falkordb".to_string()),
+            password: None,
             default_graph: Some(schema.graph_name.clone()),
         },
         server: ServerConfig::default(),
@@ -690,6 +692,16 @@ mod tests {
         untouched.apply_env(|_| None);
         assert_eq!(untouched.host, "127.0.0.1");
         assert_eq!(untouched.port, 6380);
+    }
+
+    #[test]
+    fn without_a_word_about_it_the_server_keeps_to_this_machine() {
+        // The server has no sign-in, so the network is opened only on request.
+        assert_eq!(ServerConfig::default().host, "127.0.0.1");
+        let config: LinsConfig = toml::from_str("[connection]\nport = 6380\n").unwrap();
+        assert_eq!(config.server.host, "127.0.0.1");
+        let opened: LinsConfig = toml::from_str("[server]\nhost = \"0.0.0.0\"\n").unwrap();
+        assert_eq!(opened.server.host, "0.0.0.0", "a config file can still open it");
     }
 
     #[test]

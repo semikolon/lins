@@ -11,6 +11,9 @@ lins-web/.svelte-kit/
 .env
 *.local
 
+# Your own settings. The repository holds lins.toml.example: copy it to lins.toml.
+lins.toml
+
 # OS
 .DS_Store
 

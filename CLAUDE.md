@@ -77,7 +77,7 @@ Graphiti is the FIRST PLUGIN, not the core. Schema auto-discovered via `db.label
 ### Config-as-Contract with Plugin Overlays
 > "There should be the possibility for plugins to contribute in a way that's kind of like an overlay. A plugin can specify styling rules, template generation, semantic search, specific output document rendering, file names even for the documents, whatever we want." — User
 
-Three layers: auto-discovered defaults → plugin overlays → user config overrides. The `lins.toml` config file is a first-class, version-controllable, shareable artifact.
+Three layers: auto-discovered defaults → plugin overlays → user config overrides. The `lins.toml` config file is a first-class, version-controllable, shareable artifact. **This repository tracks only `lins.toml.example`**: a person's own `lins.toml` is ignored by git here (since 2026-10-11), and a password belongs in the environment (`LINS_FALKORDB_PASSWORD`), never in a file that is shared.
 
 ### Layered Search (Vocabulary + LLM)
 > "The search should be LLM enhanced. So that you could give it natural language queries." — User
@@ -137,7 +137,7 @@ cd lins-web && npm run dev -- --port 5173      # proxies /api to 3334; open http
 
 **After changing the page, `touch lins-server/src/main.rs` before rebuilding the server**: the compiler does not see that the embedded files changed, and the old page is served with no error.
 
-**The server has no sign-in and shows every graph in the database.** The config's default host is `0.0.0.0`; pass `--host 127.0.0.1` unless the network is meant to see it.
+**The server has no sign-in and shows every graph in the database.** It listens on this machine only (`127.0.0.1`) unless a config file or `--host 0.0.0.0` says otherwise (the default was `0.0.0.0` until 2026-10-11).
 
 **A read query the server builds itself goes through `query_built`, never `query`**: `query` refuses any text holding a write keyword, so it refused a search for the word *create*. A reader's words enter a built query only through `view::cypher_str`.
 

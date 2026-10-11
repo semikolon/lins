@@ -252,12 +252,12 @@ pub struct QueryResult {
 [connection]
 host = "127.0.0.1"
 port = 6380
-password = "falkordb"
-default_graph = "sarpetorp"
+# password: from LINS_FALKORDB_PASSWORD in the environment
+default_graph = "my_graph"
 
 [server]
 port = 3000
-host = "0.0.0.0"
+host = "127.0.0.1"
 
 # Plugins loaded in order — later overrides earlier
 plugins = [
@@ -298,7 +298,7 @@ hide = ["name_embedding", "fact_embedding", "group_id"]  # hide vectors, interna
 # llm_api_key_env = "OPENAI_API_KEY"  # read from environment variable
 
 # Embedding endpoint for semantic search (optional, v2)
-# embedding_endpoint = "http://192.168.4.1:8080/v1"
+# embedding_endpoint = "http://localhost:8080/v1"
 # embedding_dimensions = 1024
 
 # Workspaces (v1.5)
@@ -310,7 +310,7 @@ hide = ["name_embedding", "fact_embedding", "group_id"]  # hide vectors, interna
 # Living Docs (v3)
 # [[living_docs.views]]
 # name = "DECISIONS.md"
-# graph = "sarpetorp"
+# graph = "my_graph"
 # query = "MATCH (e:Episodic) WHERE e.source_description CONTAINS 'Decision' RETURN e ORDER BY e.valid_at DESC"
 # template = "templates/decisions.md.tera"
 # output = "./DECISIONS.md"
@@ -577,7 +577,7 @@ Following the user's established design sensibility (forest green, Manrope, desa
 
 ### Embedding Endpoint (Optional, v2)
 - OpenAI-compatible embedding API
-- Can use local Darwin server (192.168.4.1:8080) or cloud API
+- Can use a local embedding server or a cloud API
 - Detects vector properties on nodes, enables semantic similarity search
 - Configurable in `lins.toml`
 

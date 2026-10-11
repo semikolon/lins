@@ -6,13 +6,15 @@
 [connection]
 host = "127.0.0.1"
 port = 6380
-password = "falkordb"
+# password = "..."            # better left out of this file: set LINS_FALKORDB_PASSWORD
+#                             # in the environment (LINS_FALKORDB_HOST and _PORT work the same way)
 # default_graph = "my_graph"    # Graph to load on startup
 
 # ─── Web Server ───────────────────────────────────────────────────────────────
 [server]
 port = 3000
-host = "0.0.0.0"               # "0.0.0.0" for LAN access, "127.0.0.1" for local only
+host = "127.0.0.1"             # this machine only. "0.0.0.0" opens it to your network,
+                               # and the server has no sign-in
 
 # ─── Plugins ──────────────────────────────────────────────────────────────────
 # Plugin config overlays, loaded in order. Later plugins override earlier ones.
@@ -86,7 +88,7 @@ hide = ["group_id", "uuid"]     # Internal fields. Vectors are left out without 
 # llm_api_key_env = "OPENAI_API_KEY"         # Read API key from this env var
 
 # Embedding endpoint for semantic search (optional, v2).
-# embedding_endpoint = "http://192.168.4.1:8080/v1"
+# embedding_endpoint = "http://localhost:8080/v1"
 # embedding_dimensions = 1024
 
 # ─── FalkorDB Recommended Settings ───────────────────────────────────────────

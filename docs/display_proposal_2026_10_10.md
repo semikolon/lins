@@ -465,6 +465,63 @@ measurement above the case for the browser is narrower than first written: its t
 next step proposed, one real scene drawn both ways and shown side by side. The owner said to do
 it ("Sure, thanks, do that."), and it is built: § 8a.
 
+### 7b. After the trial: the look does not decide it, and what does differ (2026-10-11)
+
+The owner, on seeing the trial of § 8a: *"Wow, I mean, these feel identical to me thus far... At
+least in terms of the look."* He then asked what differs for developing the maps further, here
+and in another project of his that draws maps of its own, and named the sharing of code between
+the two as *"an important, perhaps deciding factor"*. He also asked whether a desktop app can be
+snappy without a Rust-drawn view, with Rust in everything around the graph.
+
+What follows is proposed and unruled.
+
+**Sharing code with an application that draws maps of its own.** The case at hand was read, not
+assumed: that application's pages are Svelte 5, as Lins's page is; its maps are drawn by the
+browser as SVG, every box a real link; and its placing is done by plain functions that touch no
+page. Two map drawings of nearly the same picture (a thing in the middle, what bears on it at its
+sides) therefore exist already, written apart.
+
+- A **browser-drawn** scene is shared as what it is: the placing rules as functions, the cards,
+  links and moving-about as a Svelte component. The host styles it with its own stylesheet and
+  puts its own contents in a card.
+- A **Rust-drawn** scene is shared as a canvas. It drops into the same page, and then a box is no
+  longer a link (nothing to open in a new tab, to copy, or to reach by keyboard, unless built),
+  the host's stylesheet does not reach it, and the page gains 4.65 MB (1.9 MB compressed) where
+  the browser half's own code in the trial is under 26 KB.
+
+**What is likely to be built next, and where each stands.**
+
+| | The browser draws | Rust draws |
+|---|---|---|
+| Things in a card: chips, counts, a button, a field to answer in | Ordinary HTML | Each drawn and placed by hand; typing into a field is the weak side of egui on the web (§ 7a) |
+| A box that is a link | Is one | Built by hand, and never a link to the browser |
+| A phone | Reflows; a pinch needs writing (the trial takes a wheel and a drag) | Touch is handled by egui; one fixed drawing |
+| Thousands of nodes at once, a far view of a whole graph | No | Yes: this is where it wins |
+| A test or an agent reading the scene | Reads the page | Reads the data the scene publishes |
+| A desktop app | The same page in a web view, inside a Rust shell | A native window |
+| The placing rules | One copy, run where the text is measured | A second copy, needed by a Rust-drawn view only |
+
+**The desktop question.** Yes to both halves. A desktop Lins can be a Rust program that owns the
+window, holds `lins-core` in the same process, and shows the page in the system's web view; the
+owner's assistant application is built that way already (Tauri 2 with a SvelteKit page). On speed,
+the trial's browser half held the display's rate with 56 cards and 62 links. **Not measured**: on
+macOS such a shell shows pages with Safari's engine, and the trial ran in Chrome's; no test browser
+with Safari's engine is on the machine. The check is to open `/trial` in Safari and press *Time a
+zoom*.
+
+**The division proposed.**
+
+- **Rust decides what is in a scene**: the server ranks the neighbours, keeps the budget, and
+  counts what is left behind the stubs (§ 5.1, § 5.2). In the trial the page did the ranking as a
+  stand-in.
+- **The browser decides where, and draws**: the placing rules in TypeScript, since they need the
+  measured height of the text; cards and links as a component a host application can use.
+- **The Rust-drawn view is parked, not deleted.** It is the candidate for a far view of a whole
+  graph, should one be wanted, and the trial's Rust copy of the placing rules stays with it.
+
+What this costs: no native window without a web view, and a far view would be a second renderer
+beside the first.
+
 ---
 
 ## 8. What only a trial can show
@@ -589,7 +646,9 @@ Each step is useful alone and can be checked against the real graph.
 2. **What draws the cards**: the browser itself, a library, or a renderer in Rust (§ 7, § 7a).
    Open, and next. As first written this was part of decision 1; the owner asked why cards would
    set the Rust renderer aside, and they do not. **A trial page draws one scene both ways, side
-   by side (§ 8a); the choice is his, by eye.**
+   by side (§ 8a).** His word on seeing it: the two feel identical in look. So the look does not
+   decide it; § 7b says what does differ and proposes the browser, as one component shared with
+   his other project that draws maps. Still his to rule.
 3. The budget: aim at 40, stop at 100, bring in 8 at a time.
 4. Columns around a node as the default arrangement, forces for free scenes.
 5. Membership as chips.

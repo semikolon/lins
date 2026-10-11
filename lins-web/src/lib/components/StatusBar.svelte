@@ -14,6 +14,7 @@
   const MODE_WORDS: Record<string, string> = {
     all: 'the whole graph',
     overview: 'its best-connected nodes',
+    first: 'where this view opens',
     around: 'one neighbourhood',
     query: 'a query',
   };

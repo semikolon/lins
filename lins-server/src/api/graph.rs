@@ -184,7 +184,7 @@ struct ViewResponse {
     /// How many of them the view's own rules leave out.
     hidden_node_count: usize,
     /// "all": every visible node is here. "overview": the best-connected ones.
-    /// "around": one node and its neighbours.
+    /// "first": the nodes the view names. "around": one node and its neighbours.
     mode: &'static str,
     /// True when visible nodes exist that this response does not hold.
     truncated: bool,
@@ -197,9 +197,11 @@ struct ViewResponse {
 
 /// GET /api/graphs/:name/data — what a person should see first.
 ///
-/// A graph small enough is returned whole, without the kinds its view hides.
-/// A larger one opens on its best-connected visible nodes and the links among
-/// them, since the first thousand nodes in storage order are mostly unjoined.
+/// A view that names the nodes it opens on gets those and the links among them.
+/// Otherwise a graph small enough is returned whole, without the kinds its view
+/// hides, and a larger one opens on its best-connected visible nodes and the
+/// links among them, since the first thousand nodes in storage order are mostly
+/// unjoined. A caller that asks for everything is not held to the named nodes.
 async fn get_graph_data(
     State(state): State<AppState>,
     Path(name): Path<String>,
@@ -217,7 +219,30 @@ async fn get_graph_data(
     let max_nodes = graph_view.display.nodes.max_nodes.unwrap_or(DEFAULT_MAX_NODES);
     let link_condition = format!("{} AND {} AND {}", cond.node("a"), cond.node("b"), cond.rel("r"));
 
-    let (mut result, mode, truncated) = if visible <= max_nodes {
+    let named = if params.all { None } else { view::node_named("n", &graph_view.display.nodes.first) };
+    let (mut result, mode, truncated) = if let Some(named) = named {
+        let ends = format!(
+            "{} AND {}",
+            view::node_named("a", &graph_view.display.nodes.first).unwrap_or_default(),
+            view::node_named("b", &graph_view.display.nodes.first).unwrap_or_default()
+        );
+        let nodes = conn
+            .query_built(&name, &format!("MATCH (n) WHERE {} AND {named} RETURN n LIMIT {max_nodes}", cond.node("n")))
+            .await
+            .map_err(internal)?;
+        let edges = conn
+            .query_built(&name, &format!("MATCH (a)-[r]->(b) WHERE {link_condition} AND {ends} RETURN r"))
+            .await
+            .map_err(internal)?;
+        let truncated = nodes.nodes.len() < visible;
+        let result = lins_core::QueryResult {
+            edges: view::links_among(edges.edges, &nodes.nodes),
+            nodes: nodes.nodes,
+            query_time_ms: nodes.query_time_ms + edges.query_time_ms,
+            source_graph: name.clone(),
+        };
+        (result, "first", truncated)
+    } else if visible <= max_nodes {
         let nodes = conn
             .query_built(&name, &format!("MATCH (n) WHERE {} RETURN n", cond.node("n")))
             .await

@@ -214,6 +214,12 @@ pub struct NodeDisplayConfig {
     #[serde(default)]
     pub hide: Vec<NodeHideRule>,
 
+    /// The nodes a graph opens on, when a view names any: those with a rule's
+    /// label, or only those whose `key` holds one of its `values`. With no
+    /// rule the graph opens whole or on its best-connected nodes.
+    #[serde(default)]
+    pub first: Vec<NodeHideRule>,
+
     /// A graph with at most this many visible nodes is loaded whole (default 1500).
     #[serde(default)]
     pub max_nodes: Option<usize>,
@@ -227,7 +233,8 @@ pub struct NodeDisplayConfig {
     pub neighbours: Option<usize>,
 }
 
-/// Hide the nodes with this label, or only those whose `key` holds one of `values`.
+/// The nodes with this label, or only those whose `key` holds one of `values`.
+/// Under `hide` they are left out; under `first` they are what the graph opens on.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NodeHideRule {
     pub label: String,
@@ -481,6 +488,11 @@ fn lay_over(
             display.nodes.hide.push(rule.clone());
         }
     }
+    for rule in &over.nodes.first {
+        if !display.nodes.first.contains(rule) {
+            display.nodes.first.push(rule.clone());
+        }
+    }
     display.nodes.max_nodes = over.nodes.max_nodes.or(display.nodes.max_nodes);
     display.nodes.overview = over.nodes.overview.or(display.nodes.overview);
     display.nodes.neighbours = over.nodes.neighbours.or(display.nodes.neighbours);
@@ -648,6 +660,12 @@ mod tests {
             hide = ["SIMILAR_TO"]
             [display.nodes]
             overview = 80
+            [[display.nodes.first]]
+            label = "Source"
+            [[display.nodes.first]]
+            label = "Claim"
+            key = "stage"
+            values = ["canonical"]
             "##,
         ));
 
@@ -664,12 +682,15 @@ mod tests {
         assert_eq!(view.display.properties.hide, vec!["embedding", "uuid"], "added once");
         assert_eq!(view.display.nodes.hide.len(), 1);
         assert_eq!(view.display.nodes.overview, Some(80));
+        assert_eq!(view.display.nodes.first.len(), 2, "a plugin may name what its graph opens on");
+        assert_eq!(view.display.nodes.first[1].values, vec!["canonical"]);
         assert_eq!(view.display.relationships.hide, vec!["SIMILAR_TO"]);
 
         let other = config.view_for("g2");
         assert_eq!(other.styling.labels["Claim"].color.as_deref(), Some("#111111"));
         assert!(other.styling.labels["Claim"].caption.is_none(), "the plugin is not for this graph");
         assert!(other.display.nodes.hide.is_empty());
+        assert!(other.display.nodes.first.is_empty());
         assert!(!other.styling.relationships.contains_key("SUPPORTS"));
         assert_eq!(other.display.properties.hide, vec!["uuid"]);
     }

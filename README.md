@@ -115,6 +115,10 @@ opens on its `overview` best-connected nodes (150) and the links among them. Cho
 result opens that node with up to `neighbours` (60) of its neighbours, and a double click on any
 node widens the view by that node's neighbours without moving what is already there.
 
+A view can instead name the nodes its graph opens on. It then opens on those nodes and the links
+among them, whatever the graph's size, and a named node is kept even when nothing in the view joins
+it. *Show hidden* still loads everything.
+
 A view can leave kinds of node and link out. They come back with *show hidden* in the
 status bar.
 
@@ -133,6 +137,14 @@ values = ["scaffolding"]
 
 [[display.nodes.hide]]               # or a whole label
 label = "Session"
+
+[[display.nodes.first]]              # open on the nodes of a label
+label = "Topic"
+
+[[display.nodes.first]]              # and on those of another whose key holds one of the values
+label = "Claim"
+key = "stage"
+values = ["settled"]
 
 [display.relationships]
 hide = ["SIMILAR_TO"]

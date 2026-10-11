@@ -70,6 +70,37 @@ pub fn node_visible(alias: &str, rules: &[NodeHideRule]) -> String {
     }
 }
 
+/// The condition that picks out the nodes a view opens on, for the node bound to `alias`.
+///
+/// A rule with no key names the whole label; a rule with a key names the nodes
+/// whose key holds one of the values. Nothing is returned when no rule can be
+/// used, so a view with only unusable rules opens the ordinary way.
+pub fn node_named(alias: &str, rules: &[NodeHideRule]) -> Option<String> {
+    let mut parts = Vec::new();
+    for rule in rules {
+        if !is_ident(&rule.label) {
+            continue;
+        }
+        let has_label = format!("{} IN labels({alias})", cypher_str(&rule.label));
+        match &rule.key {
+            None => parts.push(has_label),
+            Some(key) if is_ident(key) && !rule.values.is_empty() => {
+                let values: Vec<String> = rule.values.iter().map(|v| cypher_str(v)).collect();
+                parts.push(format!(
+                    "({has_label} AND coalesce(toString({alias}.{key}), '') IN [{}])",
+                    values.join(", ")
+                ));
+            }
+            Some(_) => {}
+        }
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(format!("({})", parts.join(" OR ")))
+    }
+}
+
 /// The condition a relationship must meet to be shown, for the one bound to `alias`.
 pub fn rel_visible(alias: &str, hidden: &[String]) -> String {
     let types: Vec<String> = hidden.iter().filter(|t| is_ident(t)).map(|t| cypher_str(t)).collect();
@@ -196,6 +227,17 @@ mod tests {
     fn a_rule_that_is_not_a_plain_name_is_skipped_and_never_written() {
         let bad = [rule("Claim) DELETE", None, &[]), rule("Claim", Some("k) OR true"), &["x"])];
         assert_eq!(node_visible("n", &bad), "true");
+    }
+
+    #[test]
+    fn a_view_names_the_nodes_it_opens_on() {
+        assert_eq!(node_named("n", &[]), None);
+        assert_eq!(
+            node_named("n", &[rule("Review", None, &[]), rule("Arc", Some("waits"), &["yes"])]).as_deref(),
+            Some("('Review' IN labels(n) OR ('Arc' IN labels(n) AND coalesce(toString(n.waits), '') IN ['yes']))")
+        );
+        let bad = [rule("Arc) DETACH DELETE n //", None, &[]), rule("Arc", Some("a.b"), &["x"]), rule("Arc", Some("waits"), &[])];
+        assert_eq!(node_named("n", &bad), None, "a rule that cannot be used names nothing");
         assert_eq!(rel_visible("r", &["OK_TYPE".into(), "bad type".into()]), "NOT type(r) IN ['OK_TYPE']");
         assert_eq!(rel_visible("r", &[]), "true");
     }

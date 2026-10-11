@@ -77,7 +77,7 @@ export interface GraphView {
   };
   display: {
     properties: { show: string[]; hide: string[] };
-    nodes: { hide: NodeHideRule[]; max_nodes?: number | null; overview?: number | null; neighbours?: number | null };
+    nodes: { hide: NodeHideRule[]; first?: NodeHideRule[]; max_nodes?: number | null; overview?: number | null; neighbours?: number | null };
     relationships: { hide: string[] };
   };
 }
@@ -86,14 +86,14 @@ export interface GraphView {
 export interface ViewResult extends QueryResult {
   total_node_count: number;
   hidden_node_count: number;
-  mode: 'all' | 'overview' | 'around';
+  mode: 'all' | 'overview' | 'first' | 'around';
   truncated: boolean;
   center?: number;
   neighbour_count?: number;
 }
 
 export interface ViewInfo {
-  mode: 'all' | 'overview' | 'around' | 'query';
+  mode: 'all' | 'overview' | 'first' | 'around' | 'query';
   total: number;
   hidden: number;
   truncated: boolean;

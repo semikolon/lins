@@ -2,9 +2,8 @@
 
 **Date:** 2026-10-10
 **Standing:** a proposal. Nothing in it is built, except one trial page that draws one scene two
-ways so that the next decision can be made by eye (§ 8a). **One part is decided (2026-10-10): a
-node is a card that holds its whole name.** What draws the cards is open, and so is everything
-after it (§ 10). How Lins looks and which library draws it are the owner's decisions
+ways (§ 8a). **Two parts are decided: a node is a card that holds its whole name (2026-10-10), and
+the browser draws it (2026-10-11).** Everything after those is open (§ 10). How Lins looks and which library draws it are the owner's decisions
 (`founding_session_2026_03_16.md` § 9), and this note is written for him to rule on, one decision
 at a time.
 **What it rests on:** his own founding notes, his verdict on the first real view, three research
@@ -41,7 +40,8 @@ Six moves, each argued below:
 The consequence that needs a ruling of its own: **what draws the cards.** This note recommends the
 browser itself (HTML for nodes, SVG for links), which retires Sigma.js from the default path
 (§ 7). As first written it put that inside the question about cards. The owner agreed to cards
-and asked why they would set the Rust renderer aside. They do not: § 7a.
+and asked why they would set the Rust renderer aside. They do not: § 7a. **He then ruled for the
+browser (2026-10-11), after a trial of both: § 7b, § 8a.**
 
 ---
 
@@ -473,7 +473,18 @@ and in another project of his that draws maps of its own, and named the sharing 
 the two as *"an important, perhaps deciding factor"*. He also asked whether a desktop app can be
 snappy without a Rust-drawn view, with Rust in everything around the graph.
 
-What follows is proposed and unruled.
+**Ruled the same day.** The owner: *"So, browser-drawn it is. Just like the Fyr way of doing
+it."* Fyr is his assistant application, a Rust shell around a page drawn by the system's web view.
+So the first line of the division below is decided: the browser draws. The rest of the division
+(what Rust decides, the parked view) is proposed and has not been ruled on.
+
+**And he said what he had meant by sharing**, which the first bullet pair below had answered too
+narrowly: *"We would probably never put a Rust-drawn map in [the other project], what I mean is
+more that it'd be easier to share learnings/approaches/code directly between [the two], especially
+for the [parts of Lins aimed at or adapted to it]."* The names in brackets replace the project's
+name. So the point was never whether a canvas could be dropped into the other project's pages. It
+is that two drawings in the same language, by the same kind of code, can learn from each other and
+exchange code directly, most of all in the parts of Lins made for that project.
 
 **Sharing code with an application that draws maps of its own.** The case at hand was read, not
 assumed: that application's pages are Svelte 5, as Lins's page is; its maps are drawn by the
@@ -629,8 +640,10 @@ Each step is useful alone and can be checked against the real graph.
 
 1. **Scene and ranking on the server**: the interest score, `step`, stubs with counts, "N of M".
    Independent of what draws it; today's page benefits at once.
-2. **The trial page** of § 8.
-3. **The scene renderer**: cards, pills, links, both arrangements, stable placement.
+2. **The trial page** of § 8. *(Built 2026-10-10 for the one question of what draws the cards:
+   § 8a. Its other questions are still open.)*
+3. **The scene renderer**, drawn by the browser (decided 2026-10-11): cards, pills, links, both
+   arrangements, stable placement.
 4. **Membership as chips; the legend as control; path, undo, clear.**
 5. **The kinds map and the group map.**
 6. **Theme and type.**
@@ -644,11 +657,10 @@ Each step is useful alone and can be checked against the real graph.
 1. **Cards that hold the whole name, in place of dots.** Everything else rests on this.
    **Decided 2026-10-10**, the owner: "I'm with you."
 2. **What draws the cards**: the browser itself, a library, or a renderer in Rust (§ 7, § 7a).
-   Open, and next. As first written this was part of decision 1; the owner asked why cards would
-   set the Rust renderer aside, and they do not. **A trial page draws one scene both ways, side
-   by side (§ 8a).** His word on seeing it: the two feel identical in look. So the look does not
-   decide it; § 7b says what does differ and proposes the browser, as one component shared with
-   his other project that draws maps. Still his to rule.
+   **Decided 2026-10-11**, the owner: *"So, browser-drawn it is. Just like the Fyr way of doing
+   it."* It came in two steps. A trial page drew one scene both ways (§ 8a), and he found the two
+   identical in look. What did differ is in § 7b, and what weighed with him was that the same
+   kind of code in Lins and in his other project lets the two share approaches and code directly.
 3. The budget: aim at 40, stop at 100, bring in 8 at a time.
 4. Columns around a node as the default arrangement, forces for free scenes.
 5. Membership as chips.

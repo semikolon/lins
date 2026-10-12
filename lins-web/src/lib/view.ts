@@ -1,4 +1,4 @@
-import type { GraphNode, GraphView } from './types';
+import type { Fill, GraphNode, GraphView, PropertyValue } from './types';
 
 /** The property names tried as a node's name when its label has no caption. */
 const NAME_KEYS = ['name', 'title', 'short_title', 'summary', 'label', 'text'];
@@ -48,6 +48,39 @@ export function labelColor(label: string, view: GraphView | null, labels: string
 
 export function relColor(type: string, view: GraphView | null): string {
   return view?.styling.relationships[type]?.color ?? DEFAULT_EDGE_COLOR;
+}
+
+function asNumber(value: PropertyValue | undefined): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value);
+  return null;
+}
+
+/**
+ * How much of a node is done, from the two numbers the view's fill rule names. Nothing when the
+ * view has no rule, the node lacks a number, or there is nothing in all. The server's rule for a
+ * lane (lins-core, `lanes::Fill`) is this one.
+ */
+export function fillOf(node: GraphNode, view: GraphView | null): Fill | null {
+  const rule = view?.display.fill;
+  if (!rule) return null;
+  const of = asNumber(node.properties[rule.of]);
+  if (of === null || of <= 0) return null;
+  const done = rule.done ? asNumber(node.properties[rule.done]) : null;
+  const left = rule.left ? asNumber(node.properties[rule.left]) : null;
+  const value = done !== null ? done : left !== null ? of - left : null;
+  if (value === null) return null;
+  return { done: Math.min(of, Math.max(0, value)), of };
+}
+
+/** A fill as a whole percent, for a width. */
+export function fillPercent(fill: Fill | null | undefined): number | null {
+  return fill && fill.of > 0 ? Math.round((fill.done / fill.of) * 100) : null;
+}
+
+/** "BELONGS_TO" as words, unless the view gives the kind a name of its own. */
+export function relWords(type: string, view: GraphView | null): string {
+  return view?.styling.relationships[type]?.label ?? type.toLowerCase().replaceAll('_', ' ');
 }
 
 /** Should this property be listed? Vectors are taken out by the server; this is the view's own list. */

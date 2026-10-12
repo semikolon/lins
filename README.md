@@ -13,6 +13,7 @@ A lightweight FalkorDB graph explorer with search-driven exploration and living 
 - **Vocabulary search** — instant autocomplete from graph schema
 - **Search by words** — type words from a node's name, in any order, or its exact id
 - **A bounded first view** — a large graph opens on its best-connected nodes; a node opens on its neighbourhood; a double click widens the view in place. (How legible that view is, is the open work: see `TODO.md`.)
+- **Cards in lanes** — a view can lay its graph out by a rule: a lane for each node of one kind or each value of a property, cards in order, part of a card filled for the share that is done, and a switch between several such orders. A press on a card opens it with what it is tied to in columns around it. See [`docs/arrangements.md`](docs/arrangements.md)
 - **Config-driven styling** — `lins.toml` for colors, names, sizes, and what a view leaves out
 - **Plugin overlays** — a settings file for one kind of graph, applied only to the graphs it names
 - **Multiple graphs** — switch between named FalkorDB graphs
@@ -103,8 +104,9 @@ lins-server/      Rust library and binary — Axum web server, REST API, serves 
 lins-app/         Rust binary — the desktop app: lins-server and a Tauri 2 window
                   on the page it serves
 
-lins-web/         SvelteKit + TypeScript — Sigma.js graph renderer,
-                  search bar, property panel, graph selector
+lins-web/         SvelteKit + TypeScript — cards in lanes and around a node, drawn by the
+                  page itself; the free picture by Sigma.js; search bar, property panel,
+                  graph selector
 ```
 
 ### Tech Stack
@@ -179,6 +181,32 @@ hide = ["SIMILAR_TO"]
 [display.nodes]
 overview = 150
 neighbours = 60
+```
+
+### Cards in lanes
+
+A view can lay its graph out as cards in lanes, in one order or several. The graph then opens on
+the first, and the page has a switch between them, one node with its ties, and the free picture.
+A lane is a node (its cards hold a link to it) or a value of a property. Why, what each setting
+does, and what is not built: [`docs/arrangements.md`](docs/arrangements.md).
+
+```toml
+[display.fill]                        # how full a card is drawn: what is not left, out of all
+left = "open_count"
+of = "total_count"
+
+[[display.arrangements]]
+name = "By project"
+lanes = [{ label = "Project" }]       # the nodes that are lanes
+member = "PART_OF"                    # the kind of link from a card to its lane
+sort = "open_count"                   # cards: most first
+lane_sort = "open_count"              # lanes: most first
+
+[[display.arrangements]]
+name = "By week"
+cards = [{ label = "Task" }]          # the nodes that are cards
+lane_property = "week"                # a lane for each value
+lane_ascending = true
 ```
 
 ## Roadmap

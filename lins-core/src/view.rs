@@ -142,6 +142,14 @@ pub fn strip(result: &mut QueryResult, view: &GraphView) {
     }
 }
 
+/// The same for nodes that came back outside a result.
+pub fn strip_nodes(nodes: &mut [GraphNode], view: &GraphView) {
+    let hide: HashSet<&str> = view.display.properties.hide.iter().map(String::as_str).collect();
+    for node in nodes {
+        strip_map(&mut node.properties, &hide);
+    }
+}
+
 /// The best-connected nodes, from the pairs a set of links joins.
 /// Ties are broken by id so the same graph always opens on the same view.
 pub fn best_connected(pairs: &[Vec<i64>], limit: usize) -> Vec<i64> {

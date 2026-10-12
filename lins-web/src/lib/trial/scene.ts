@@ -157,12 +157,29 @@ interface Member {
   name: string;
   /** Links to the other neighbours: a neighbour that ties others together says the most. */
   ties: number;
+  /** A second number to rank by, where the caller gives one; larger comes first. */
+  weight: number;
 }
 
 function byRank(a: Member, b: Member): number {
   if (a.ties !== b.ties) return b.ties - a.ties;
-  if (a.name !== b.name) return a.name < b.name ? -1 : 1;
-  return a.node.id - b.node.id;
+  if (a.weight !== b.weight) return b.weight - a.weight;
+  // Numbers inside a name count as numbers, so that "row 2" comes before "row 10".
+  const byName = a.name.localeCompare(b.name, 'en', { numeric: true });
+  return byName !== 0 ? byName : a.node.id - b.node.id;
+}
+
+/** How a scene chooses among a node's neighbours, beyond one number for all of them. */
+export interface SceneChoice {
+  /**
+   * Show up to this many neighbours in each group (a side and a kind of link), by that group's
+   * key, `-1:KIND` or `1:KIND`; a group not named shows `budget`. With this, `budget` is a
+   * number for each group and no longer for the whole scene, so no kind of link is crowded out
+   * by another.
+   */
+  perGroup?: Record<string, number>;
+  /** A second number to rank a neighbour by, after its links to the other neighbours. */
+  weight?: (node: GraphNode) => number;
 }
 
 /**
@@ -175,7 +192,12 @@ function byRank(a: Member, b: Member): number {
  * A neighbour joined to the middle node by several links stands once, in the group of its first
  * link (kinds in alphabetical order, the left side before the right).
  */
-export function buildScene(result: ViewResult, view: GraphView | null, budget: number): { scene: Scene; facts: SceneFacts } {
+export function buildScene(
+  result: ViewResult,
+  view: GraphView | null,
+  budget: number,
+  choice: SceneChoice = {},
+): { scene: Scene; facts: SceneFacts } {
   const centre = result.center ?? result.nodes[0]?.id;
   const nodes = new Map<number, GraphNode>(result.nodes.map((n) => [n.id, n]));
   const middle = nodes.get(centre);
@@ -214,7 +236,7 @@ export function buildScene(result: ViewResult, view: GraphView | null, budget: n
     secondLinks += list.length - 1;
     const { side, kind } = list[0];
     const node = nodes.get(id)!;
-    const member: Member = { node, name: nodeFullName(node, view), ties: ties.get(id) ?? 0 };
+    const member: Member = { node, name: nodeFullName(node, view), ties: ties.get(id) ?? 0, weight: choice.weight?.(node) ?? 0 };
     const key = `${side}:${kind}`;
     const group = groups.get(key) ?? { side, kind, members: [] };
     group.members.push(member);
@@ -223,7 +245,15 @@ export function buildScene(result: ViewResult, view: GraphView | null, budget: n
   }
 
   all.sort(byRank);
-  const shown = new Set(all.slice(0, Math.max(0, budget)).map((m) => m.node.id));
+  const shown = new Set<number>();
+  if (choice.perGroup) {
+    for (const [key, group] of groups) {
+      const most = Math.max(0, choice.perGroup[key] ?? budget);
+      for (const member of [...group.members].sort(byRank).slice(0, most)) shown.add(member.node.id);
+    }
+  } else {
+    for (const member of all.slice(0, Math.max(0, budget))) shown.add(member.node.id);
+  }
 
   const side = (which: -1 | 1): SceneGroup[] =>
     [...groups.values()]

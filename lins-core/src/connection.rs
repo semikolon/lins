@@ -122,6 +122,17 @@ impl FalkorConnection {
         Ok(parse_int_rows(&raw))
     }
 
+    /// Execute a query the server itself built whose columns are plain values
+    /// (text, numbers, nothing), and return the rows. For counts and sums by group.
+    pub async fn query_value_rows(
+        &self,
+        graph: &str,
+        cypher: &str,
+    ) -> Result<Vec<Vec<PropertyValue>>, ConnectionError> {
+        let raw = self.query_raw(graph, cypher).await?;
+        Ok(parse_value_rows(&raw))
+    }
+
     /// Execute a raw Cypher query and return the unparsed Redis Value.
     /// Uses verbose mode so labels and property keys are returned as strings.
     #[instrument(skip(self), fields(graph = %graph))]
@@ -436,6 +447,21 @@ fn parse_int_rows(value: &Value) -> Vec<Vec<i64>> {
     out
 }
 
+/// The rows of a result as plain values, a column for a column.
+fn parse_value_rows(value: &Value) -> Vec<Vec<PropertyValue>> {
+    let mut out = Vec::new();
+    if let Value::Array(top) = value {
+        if let Some(Value::Array(rows)) = top.get(1) {
+            for row in rows {
+                if let Value::Array(cols) = row {
+                    out.push(cols.iter().map(redis_value_to_property).collect());
+                }
+            }
+        }
+    }
+    out
+}
+
 fn extract_count_from_result(value: &Value) -> usize {
     if let Value::Array(top) = value {
         if top.len() >= 2 {
@@ -485,5 +511,25 @@ mod tests {
         ]);
         assert_eq!(parse_int_rows(&raw), vec![vec![1, 2], vec![5, 8]]);
         assert!(parse_int_rows(&Value::Nil).is_empty());
+    }
+
+    #[test]
+    fn value_rows_keep_text_numbers_and_nothing_column_for_column() {
+        let raw = Value::Array(vec![
+            Value::Array(vec![]),
+            Value::Array(vec![
+                Value::Array(vec![Value::BulkString(b"week 1".to_vec()), Value::Int(4), Value::BulkString(b"7.5".to_vec())]),
+                Value::Array(vec![Value::Nil, Value::Int(2), Value::Int(0)]),
+            ]),
+            Value::Array(vec![]),
+        ]);
+        assert_eq!(
+            parse_value_rows(&raw),
+            vec![
+                vec![PropertyValue::String("week 1".into()), PropertyValue::Integer(4), PropertyValue::String("7.5".into())],
+                vec![PropertyValue::Null, PropertyValue::Integer(2), PropertyValue::Integer(0)],
+            ]
+        );
+        assert!(parse_value_rows(&Value::Nil).is_empty());
     }
 }

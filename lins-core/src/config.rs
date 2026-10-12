@@ -205,6 +205,105 @@ pub struct DisplayConfig {
 
     #[serde(default)]
     pub relationships: RelationshipDisplayConfig,
+
+    /// Ways of laying the graph out as cards in lanes. A graph whose view has
+    /// any opens on the first; the page offers a switch between them.
+    #[serde(default)]
+    pub arrangements: Vec<Arrangement>,
+
+    /// How much of a card is drawn filled, from two of its own numbers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<FillRule>,
+}
+
+/// One way of laying a graph out: cards in lanes, placed by a rule, so that where
+/// a card sits says something.
+///
+/// A lane is either a node or a value. With `lanes` and `member`, the lanes are
+/// the nodes the rules name and a lane's cards are the nodes that hold a link
+/// of the kind `member` to it. With `cards` and `lane_property`, the cards are
+/// the nodes the rules name and there is one lane for each value of the
+/// property, with a last lane for the cards that lack it.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct Arrangement {
+    /// What the switch calls it.
+    pub name: String,
+
+    /// The nodes that are lanes.
+    #[serde(default)]
+    pub lanes: Vec<NodeHideRule>,
+
+    /// The kind of link that runs from a card to its lane.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub member: Option<String>,
+
+    /// The nodes that are cards, when a lane is a value.
+    #[serde(default)]
+    pub cards: Vec<NodeHideRule>,
+
+    /// The property whose values are the lanes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lane_property: Option<String>,
+
+    /// The property a lane's cards are ordered by: the largest first, the cards
+    /// that lack it last. Without one, cards stand in the order they were stored.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sort: Option<String>,
+
+    /// Order the cards smallest first.
+    #[serde(default)]
+    pub ascending: bool,
+
+    /// The property the lanes are ordered by, when a lane is a node: the largest
+    /// first. Lanes that are values are ordered by the value itself.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lane_sort: Option<String>,
+
+    /// Order the lanes smallest first.
+    #[serde(default)]
+    pub lane_ascending: bool,
+
+    /// How many cards a lane shows before the rest wait behind a counted stub (default 8).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub per_lane: Option<usize>,
+}
+
+/// What an arrangement's lanes are, once its settings are found usable.
+#[derive(Debug, PartialEq)]
+pub enum LaneRule<'a> {
+    /// The lanes are nodes, and a card holds a link of this kind to its lane.
+    Nodes { lanes: &'a [NodeHideRule], member: &'a str },
+    /// The lanes are the values of a property of the cards.
+    Values { cards: &'a [NodeHideRule], property: &'a str },
+}
+
+impl Arrangement {
+    /// What the lanes are. Nothing when the settings name neither kind in full,
+    /// or name a link or a property that is not a plain name.
+    pub fn lane_rule(&self) -> Option<LaneRule<'_>> {
+        match (&self.member, &self.lane_property) {
+            (Some(member), _) if !self.lanes.is_empty() && crate::view::is_ident(member) => {
+                Some(LaneRule::Nodes { lanes: &self.lanes, member })
+            }
+            (_, Some(property)) if !self.cards.is_empty() && crate::view::is_ident(property) => {
+                Some(LaneRule::Values { cards: &self.cards, property })
+            }
+            _ => None,
+        }
+    }
+}
+
+/// How full a card is drawn: `done` out of `of`, or what is not `left` out of `of`.
+/// Each names a property that holds a number. A card without them is drawn plain.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct FillRule {
+    pub of: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub left: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub done: Option<String>,
 }
 
 /// Which nodes a view leaves out, and how many it loads at once.
@@ -497,6 +596,17 @@ fn lay_over(
     display.nodes.overview = over.nodes.overview.or(display.nodes.overview);
     display.nodes.neighbours = over.nodes.neighbours.or(display.nodes.neighbours);
     add_missing(&mut display.relationships.hide, &over.relationships.hide);
+    // An arrangement is known by its name: a later layer's replaces an earlier one of the
+    // same name where it stands, and a new name is added after those already there.
+    for arrangement in &over.arrangements {
+        match display.arrangements.iter_mut().find(|a| a.name == arrangement.name) {
+            Some(existing) => *existing = arrangement.clone(),
+            None => display.arrangements.push(arrangement.clone()),
+        }
+    }
+    if over.fill.is_some() {
+        display.fill = over.fill.clone();
+    }
 }
 
 fn add_missing(into: &mut Vec<String>, from: &[String]) {
@@ -597,6 +707,8 @@ pub fn generate_default_config(schema: &GraphSchema) -> LinsConfig {
             },
             nodes: NodeDisplayConfig::default(),
             relationships: RelationshipDisplayConfig::default(),
+            arrangements: Vec::new(),
+            fill: None,
         },
         search: SearchConfig::default(),
         plugins: Vec::new(),
@@ -693,6 +805,90 @@ mod tests {
         assert!(other.display.nodes.first.is_empty());
         assert!(!other.styling.relationships.contains_key("SUPPORTS"));
         assert_eq!(other.display.properties.hide, vec!["uuid"]);
+    }
+
+    #[test]
+    fn an_arrangement_says_what_its_lanes_are_or_is_not_usable() {
+        let view: Overlay = overlay(
+            r##"
+            [display.fill]
+            left = "open"
+            of = "total"
+
+            [[display.arrangements]]
+            name = "What waits"
+            lanes = [{ label = "Review" }]
+            member = "BELONGS_TO"
+            sort = "open"
+
+            [[display.arrangements]]
+            name = "By week"
+            cards = [{ label = "Topic", key = "kind", values = ["a"] }]
+            lane_property = "week"
+            lane_ascending = true
+            per_lane = 5
+
+            [[display.arrangements]]
+            name = "Half said"
+            lanes = [{ label = "Review" }]
+
+            [[display.arrangements]]
+            name = "Not a name"
+            lanes = [{ label = "Review" }]
+            member = "BELONGS TO"
+            "##,
+        );
+        let a = &view.display.arrangements;
+        assert_eq!(view.display.fill, Some(FillRule { of: "total".into(), left: Some("open".into()), done: None }));
+        assert_eq!(a[0].lane_rule(), Some(LaneRule::Nodes { lanes: &a[0].lanes, member: "BELONGS_TO" }));
+        assert_eq!(a[1].lane_rule(), Some(LaneRule::Values { cards: &a[1].cards, property: "week" }));
+        assert_eq!((a[1].lane_ascending, a[1].per_lane, a[0].ascending), (true, Some(5), false));
+        assert_eq!(a[2].lane_rule(), None, "lanes with no kind of link to them");
+        assert_eq!(a[3].lane_rule(), None, "a kind of link that is not a plain name is never written into a query");
+    }
+
+    #[test]
+    fn a_later_layer_replaces_an_arrangement_of_the_same_name_and_adds_a_new_one() {
+        let mut config: LinsConfig = toml::from_str(
+            r##"
+            [[display.arrangements]]
+            name = "What waits"
+            lanes = [{ label = "Review" }]
+            member = "PART_OF"
+
+            [[display.arrangements]]
+            name = "Mine"
+            cards = [{ label = "Topic" }]
+            lane_property = "owner"
+            "##,
+        )
+        .unwrap();
+        config.overlays.push(overlay(
+            r##"
+            graphs = ["g1"]
+            [display.fill]
+            done = "settled"
+            of = "total"
+            [[display.arrangements]]
+            name = "What waits"
+            lanes = [{ label = "Review" }]
+            member = "BELONGS_TO"
+            [[display.arrangements]]
+            name = "By week"
+            cards = [{ label = "Topic" }]
+            lane_property = "week"
+            "##,
+        ));
+
+        let view = config.view_for("g1");
+        let names: Vec<&str> = view.display.arrangements.iter().map(|a| a.name.as_str()).collect();
+        assert_eq!(names, vec!["What waits", "By week", "Mine"], "the overlay's order, then what the user added");
+        assert_eq!(view.display.arrangements[0].member.as_deref(), Some("PART_OF"), "the user's own wins");
+        assert_eq!(view.display.fill.as_ref().and_then(|f| f.done.as_deref()), Some("settled"));
+
+        let other = config.view_for("g2");
+        assert_eq!(other.display.arrangements.len(), 2, "an overlay for another graph adds nothing here");
+        assert!(other.display.fill.is_none());
     }
 
     #[test]

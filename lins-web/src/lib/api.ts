@@ -1,4 +1,4 @@
-import type { GraphInfo, GraphSchema, GraphView, QueryResult, Suggestion, ViewResult } from './types';
+import type { Board, GraphInfo, GraphSchema, GraphView, QueryResult, Suggestion, ViewResult } from './types';
 
 const API_BASE = '/api';
 
@@ -41,6 +41,18 @@ export async function fetchAround(name: string, id: number, all = false): Promis
   return request<ViewResult>(
     `/graphs/${encodeURIComponent(name)}/around/${id}${all ? '?all=true' : ''}`,
   );
+}
+
+/**
+ * One of the view's arrangements: cards in lanes. `shown` raises how many cards a lane shows,
+ * by the lane's key; a lane it does not name shows the arrangement's own number.
+ */
+export async function fetchBoard(name: string, index: number, all = false, shown: Record<string, number> = {}): Promise<Board> {
+  const params = new URLSearchParams();
+  if (all) params.set('all', 'true');
+  if (Object.keys(shown).length > 0) params.set('shown', JSON.stringify(shown));
+  const query = params.size > 0 ? `?${params}` : '';
+  return request<Board>(`/graphs/${encodeURIComponent(name)}/lanes/${index}${query}`);
 }
 
 /** Nodes whose name holds the words, or whose id is exactly them. */

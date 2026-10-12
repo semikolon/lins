@@ -1,8 +1,8 @@
 <script lang="ts">
   import { get } from 'svelte/store';
-  import { currentGraph, graphData, isLoading, showAll, view, viewInfo } from '$lib/stores/graph';
+  import { currentGraph, graphData, isLoading, mode, showAll, view, viewInfo } from '$lib/stores/graph';
   import { searchVocabulary, executeQuery, findNodes } from '$lib/api';
-  import { merged, openAround } from '$lib/explore';
+  import { merged, openNode } from '$lib/explore';
   import { labelColor, nodeName } from '$lib/view';
   import type { GraphNode, Suggestion, QueryResult } from '$lib/types';
 
@@ -13,7 +13,7 @@
   async function chooseNode(node: GraphNode) {
     isOpen = false;
     query = nodeName(node, get(view), 80);
-    await openAround(node.id);
+    await openNode(node.id);
   }
 
   let query = $state('');
@@ -115,6 +115,8 @@
       // Additive merge: add new nodes/edges to existing data
       graphData.update((existing) => merged(existing, result));
       viewInfo.update((v) => (v ? { ...v, truncated: true } : v));
+      // What a query returns is shown in the free picture, whatever was on show.
+      mode.set({ kind: 'free' });
     } catch (err) {
       console.error('Query failed:', err);
     } finally {
@@ -176,6 +178,7 @@
           source_graph: result.source_graph,
         };
       });
+      mode.set({ kind: 'free' });
     } catch (err) {
       console.error('Search failed:', err);
     } finally {

@@ -3,7 +3,10 @@
 **Date:** 2026-10-10
 **Standing:** a proposal. Nothing in it is built, except one trial page that draws one scene two
 ways (§ 8a). **Two parts are decided: a node is a card that holds its whole name (2026-10-10), and
-the browser draws it (2026-10-11).** Everything after those is open (§ 10). How Lins looks and which library draws it are the owner's decisions
+the browser draws it (2026-10-11).** Everything after those is open (§ 10). **Since 2026-10-12 a
+graph whose view asks for it is drawn as cards in lanes, with a switch between orders and a press
+through to one node and its ties (`arrangements.md`); for such a graph that settles parts of
+decisions 3, 4 and 5, and for every other graph they are as open as before.** How Lins looks and which library draws it are the owner's decisions
 (`founding_session_2026_03_16.md` § 9), and this note is written for him to rule on, one decision
 at a time.
 **What it rests on:** his own founding notes, his verdict on the first real view, three research
@@ -664,6 +667,13 @@ Each step is useful alone and can be checked against the real graph.
 3. The budget: aim at 40, stop at 100, bring in 8 at a time.
 4. Columns around a node as the default arrangement, forces for free scenes.
 5. Membership as chips.
+
+   **Decisions 3 to 5, for a graph whose view defines an arrangement: built 2026-10-12** on the
+   owner's word to a sketch of it (*"Yes build it."*). Eight at a time behind counted stubs, in a
+   lane and for each kind of link around a node; columns around a node, as a view of the main
+   page; belonging shown by the lane a card sits in. Not built, and still his for every graph: the
+   aim of 40 and the stop at 100, forces that know the cards, and a chip on a card. What was built
+   and why: `arrangements.md`.
 6. Bright text on raised dark cards, or dark text on light cards.
 7. Inter as the face.
 

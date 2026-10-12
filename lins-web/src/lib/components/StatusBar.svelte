@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { currentGraph, graphData, isLoading, showAll, view, viewInfo } from '$lib/stores/graph';
+  import { board, currentGraph, graphData, isLoading, mode, showAll, view, viewInfo } from '$lib/stores/graph';
   import { setShowAll } from '$lib/explore';
   import { hiddenSummary } from '$lib/view';
   import type { GraphView, ViewInfo } from '$lib/types';
@@ -20,6 +20,9 @@
   };
 
   function shown(): string {
+    if ($mode.kind === 'lanes' && $board) {
+      return `${$board.shown_count.toLocaleString('en')} of ${$board.card_count.toLocaleString('en')} cards · ${$board.name}`;
+    }
     if (!info) return `${nodeCount} nodes, ${edgeCount} edges`;
     const of = info.truncated || info.hidden > 0 ? ` of ${info.total.toLocaleString('en')}` : '';
     return `${nodeCount.toLocaleString('en')}${of} nodes, ${edgeCount.toLocaleString('en')} links · ${MODE_WORDS[info.mode] ?? info.mode}`;

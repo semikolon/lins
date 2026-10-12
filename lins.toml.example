@@ -79,6 +79,28 @@ hide = ["group_id", "uuid"]     # Internal fields. Vectors are left out without 
 # overview = 150          # a larger graph opens on this many of its best-connected nodes
 # neighbours = 60         # one widening brings in at most this many neighbours
 
+# Cards in lanes: a graph laid out by a rule, in one order or several (docs/arrangements.md).
+# A graph whose view has any opens on the first, and the page offers a switch between them.
+#
+# [display.fill]                       # how full a card is drawn
+# left = "open_count"                  # what is not left, out of all; or: done = "settled_count"
+# of = "total_count"
+#
+# [[display.arrangements]]             # lanes that are nodes
+# name = "By project"
+# lanes = [{ label = "Project" }]      # a rule as under display.nodes.hide: a label, or a label,
+#                                      # a key and the values it may hold
+# member = "PART_OF"                   # the kind of link from a card to its lane
+# sort = "open_count"                  # cards: most first (ascending = true turns it round)
+# lane_sort = "open_count"             # lanes: most first (lane_ascending = true turns it round)
+# per_lane = 8                         # cards shown before the rest wait behind a counted stub
+#
+# [[display.arrangements]]             # lanes that are values
+# name = "By week"
+# cards = [{ label = "Task" }]
+# lane_property = "week"               # a lane for each value; cards without one share a last lane
+# lane_ascending = true
+
 # ─── Search ───────────────────────────────────────────────────────────────────
 # LLM endpoint for natural language search (optional, v1.5).
 # Vocabulary autocomplete works without any LLM configuration.

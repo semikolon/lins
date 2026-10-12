@@ -1,8 +1,8 @@
 <script lang="ts">
   import { get } from 'svelte/store';
-  import { selectedNode, selectedEdge, graphData, view } from '$lib/stores/graph';
+  import { mode, selectedNode, selectedEdge, graphData, view } from '$lib/stores/graph';
   import { labelColor, nodeFullName, relColor, shownProperty } from '$lib/view';
-  import { expandAround, openAround } from '$lib/explore';
+  import { expandAround, openAround, showScene } from '$lib/explore';
   import type { GraphNode, GraphEdge, GraphView, PropertyValue, QueryResult } from '$lib/types';
 
   let currentView = $state<GraphView | null>(null);
@@ -104,6 +104,11 @@
   }
 
   function navigateToNode(nodeId: number) {
+    // Where cards are on show, a node is opened with its ties; in the free picture it is selected.
+    if (get(mode).kind !== 'free') {
+      void showScene(nodeId);
+      return;
+    }
     const data: QueryResult | null = get(graphData);
     if (!data) return;
     const target = data.nodes.find((n) => n.id === nodeId);
@@ -137,12 +142,18 @@
 
     <div class="panel-content">
       <div class="moves">
-        <button class="move-btn" onclick={() => node && expandAround(node.id)} title="Add this node's neighbours to the view (or double-click the node)">
-          Widen from here
-        </button>
-        <button class="move-btn" onclick={() => node && openAround(node.id)} title="Show only this node and its neighbours">
-          Only this neighbourhood
-        </button>
+        {#if $mode.kind === 'free'}
+          <button class="move-btn" onclick={() => node && expandAround(node.id)} title="Add this node's neighbours to the view (or double-click the node)">
+            Widen from here
+          </button>
+          <button class="move-btn" onclick={() => node && openAround(node.id)} title="Show only this node and its neighbours">
+            Only this neighbourhood
+          </button>
+        {:else}
+          <button class="move-btn" onclick={() => node && showScene(node.id)} title="Put this node in the middle, with what it is tied to in columns around it">
+            Open with its ties
+          </button>
+        {/if}
       </div>
       <section class="properties">
         <h3 class="section-title">Properties</h3>

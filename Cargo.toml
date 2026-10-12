@@ -1,7 +1,9 @@
 [workspace]
-members = ["lins-core", "lins-server", "lins-render"]
+members = ["lins-core", "lins-server", "lins-render", "lins-app"]
 # lins-render is the trial of a Rust-drawn view. It is built for the web by
 # scripts/build-render.sh and is left out of an ordinary `cargo build`.
+# lins-app is the desktop app. It brings a window toolkit with it, so it is built
+# on its own by scripts/build-app.sh and is left out of an ordinary `cargo build` too.
 default-members = ["lins-core", "lins-server"]
 resolver = "2"
 

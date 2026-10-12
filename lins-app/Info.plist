@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- The page is served by Lins itself, on this machine, to its own window. -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    <!-- macOS asks before an app may reach a machine on the local network. -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Lins connects to the FalkorDB database you point it at, which may be on your local network.</string>
+</dict>
+</plist>

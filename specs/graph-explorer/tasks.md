@@ -202,12 +202,12 @@
 
 ### Tauri Desktop App
 
-- [ ] **T-26**: Set up `lins-app` Tauri crate
+- [x] **T-26**: Set up `lins-app` Tauri crate *(2026-10-12)*
   - Tauri 2 config
   - Embed same `lins-web` frontend
-  - Tauri commands → `lins-core` calls
+  - ~~Tauri commands → `lins-core` calls~~ **Built another way**: the app holds `lins-server` in its own process and its window opens the page that server serves, on a port of this machine. One API, shared with the browser, and nothing to keep in step. Reasoning in `CLAUDE.md` § Running.
 
-- [ ] **T-27**: Desktop app features
+- [ ] **T-27**: Desktop app features *(part done 2026-10-12: dock icon, native window, the window's place and size remembered, on macOS; the system tray and the Windows and Linux builds are not)*
   - Dock icon, native window management
   - System tray icon for daemon status (future)
   - Platform builds: `.dmg` (macOS), `.msi` (Windows), `.AppImage` (Linux)

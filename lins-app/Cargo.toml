@@ -1,0 +1,22 @@
+[package]
+name = "lins-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Lins as a desktop app: the server and its page in one window"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+lins-server = { path = "../lins-server" }
+tokio.workspace = true
+anyhow.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap = { version = "4", features = ["derive"] }
+tauri = { version = "2", features = [] }
+# Remembers where the window was and how large.
+tauri-plugin-window-state = "2"

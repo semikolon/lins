@@ -20,14 +20,19 @@
   error.subscribe((e) => { errMsg = e; });
   graphData.subscribe((d) => { hasData = d !== null; });
 
-  /** Open the graph the config names, or failing that the first one. */
+  /** Open the graph the address names (`?graph=`), or the one the config names, or failing
+   *  those the first one. */
   async function start() {
     isLoading.set(true);
     error.set(null);
     try {
       const [graphs, preferred] = await Promise.all([fetchGraphs(), fetchDefaultGraph().catch(() => null)]);
       availableGraphs.set(graphs);
-      const first = graphs.find((g) => g.name === preferred)?.name ?? graphs[0]?.name;
+      const asked = new URLSearchParams(window.location.search).get('graph');
+      const first =
+        graphs.find((g) => g.name === asked)?.name ??
+        graphs.find((g) => g.name === preferred)?.name ??
+        graphs[0]?.name;
       if (first) await loadGraph(first);
     } catch (err) {
       error.set(err instanceof Error ? err.message : 'Failed to connect to Lins server');

@@ -17,6 +17,7 @@ A lightweight FalkorDB graph explorer with search-driven exploration and living 
 - **Plugin overlays** — a settings file for one kind of graph, applied only to the graphs it names
 - **Multiple graphs** — switch between named FalkorDB graphs
 - **One binary** — the server carries the built page, so there is one thing to run
+- **A desktop app** — the same server and page in a window of its own, with a dock icon (macOS built and used; see below)
 
 ## Quickstart
 
@@ -53,7 +54,7 @@ target/release/lins-server serve --config lins.toml --host 127.0.0.1 --open
 ```
 
 The page is embedded when the server is compiled. After changing the page, build it again and
-rebuild the server (`touch lins-server/src/main.rs` first, since the compiler does not see that the
+rebuild the server (`touch lins-server/src/lib.rs` first, since the compiler does not see that the
 embedded files changed).
 
 **While working on the page**, run the two apart: `cargo run --bin lins-server -- serve --port 3334`
@@ -62,6 +63,29 @@ and, in `lins-web`, `npm run dev` (which proxies `/api` to port 3334), then open
 
 **The server has no sign-in and shows every graph in the database.** `--host 127.0.0.1` keeps it
 to your own machine, which is also the default; `0.0.0.0` opens it to your network.
+
+### As a desktop app
+
+```bash
+cargo install tauri-cli --version "^2"   # once
+scripts/build-app.sh --install            # builds Lins.app and puts it in ~/Applications
+```
+
+The app is the server and its page in one process: it starts the server on a free port of this
+machine, for its own window, and stops it when you quit. Nothing on your network can reach it;
+like the server, it has no sign-in, so another program on the same machine could while it is open.
+
+**Where it finds its settings**, first match wins: `--config <file>`, then `$LINS_CONFIG`, then
+`~/.config/lins/lins.toml`, then the defaults (a database on this machine). The environment
+variables below are read on top of any of them. An app opened from the dock gets no variables from
+your shell, so it needs the file, or a small script that sets the variables and starts
+`Lins.app/Contents/MacOS/lins-app`. `--graph <name>` opens on that graph.
+
+If the database cannot be reached the window says so, with the reason, and the app stays open.
+
+Built and used on macOS. The crate is plain Tauri 2 and nothing in it is specific to macOS except
+`Info.plist`; Windows and Linux are untried. The app is signed for this machine only (ad hoc), so
+after each rebuild macOS may ask again whether it may reach devices on your local network.
 
 **Where FalkorDB is can come from the environment** in place of the config file, so that a host
 name or a password need not be written into a file you share: `LINS_FALKORDB_HOST`,
@@ -74,7 +98,10 @@ name or a password need not be written into a file you share: `LINS_FALKORDB_HOS
 lins-core/        Rust library — FalkorDB connection, schema discovery,
                   query builder, config parsing, vocabulary index
 
-lins-server/      Rust binary — Axum web server, REST API, serves frontend
+lins-server/      Rust library and binary — Axum web server, REST API, serves frontend
+
+lins-app/         Rust binary — the desktop app: lins-server and a Tauri 2 window
+                  on the page it serves
 
 lins-web/         SvelteKit + TypeScript — Sigma.js graph renderer,
                   search bar, property panel, graph selector
@@ -159,7 +186,7 @@ neighbours = 60
 | Version | Theme | Key Features |
 |---------|-------|--------------|
 | **v1** | Explorer Core | FalkorDB connection, schema discovery, WebGL rendering, vocabulary search |
-| **v1.5** | Search & UX | LLM-enhanced NL→Cypher search, workspaces, Tauri desktop app, plugin system |
+| **v1.5** | Search & UX | LLM-enhanced NL→Cypher search, workspaces, Tauri desktop app (built), plugin system (overlays built) |
 | **v2** | Intelligence | Graphiti plugin, cross-graph search, embedding-powered semantic search |
 | **v3** | Living Docs | Auto-generated markdown from graph queries, File Provider, Fyr integration |
 

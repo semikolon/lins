@@ -26,3 +26,6 @@ lins.toml
 .tools/
 lins-web/static/render/
 lins-render/assets/fonts/
+
+# The desktop app: written by its build
+lins-app/gen/

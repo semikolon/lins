@@ -172,9 +172,9 @@ The intelligence model is **config-as-contract with plugin overlays**: auto-disc
 
 **Acceptance Criteria:**
 - [ ] AC-7.1: `lins serve` — web server mode, accessible via browser at configurable port
-- [ ] AC-7.2: (v1.5) `lins app` — Tauri desktop app with native window, dock icon, window management
-- [ ] AC-7.3: 100% shared frontend between web and desktop modes
-- [ ] AC-7.4: 100% shared backend logic via `lins-core` Rust library crate
+- [x] AC-7.2: (v1.5) `lins app` — Tauri desktop app with native window, dock icon, window management *(2026-10-12, macOS. A program of its own, `lins-app`, and no `app` subcommand of the server: a subcommand would make every build of the server compile Tauri.)*
+- [x] AC-7.3: 100% shared frontend between web and desktop modes *(the same built page, served by the same server)*
+- [x] AC-7.4: 100% shared backend logic via `lins-core` Rust library crate *(and `lins-server` as a library, which the app holds whole)*
 - [ ] AC-7.5: `lins daemon` — headless mode for Living Docs generation (no UI, background process)
 - [ ] AC-7.6: Web mode accessible from any device on LAN (Mac Mini, MBP, etc.)
 

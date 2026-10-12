@@ -27,6 +27,13 @@
   function onBlur() {
     setTimeout(() => { isOpen = false; }, 200);
   }
+
+  // The list scrolls by itself, so the graph in use may sit below what shows: bring it into
+  // view when the list opens.
+  let list = $state<HTMLDivElement | null>(null);
+  $effect(() => {
+    if (isOpen && list) list.querySelector('.option.active')?.scrollIntoView({ block: 'nearest' });
+  });
 </script>
 
 <div class="graph-selector">
@@ -47,10 +54,13 @@
   </button>
 
   {#if isOpen}
-    <div class="dropdown">
+    <!-- A press inside the list must not take focus from the button, or a press on the
+         scrollbar would close the list before it scrolls. -->
+    <div class="dropdown" role="menu" tabindex="-1" bind:this={list} onmousedown={(e) => e.preventDefault()}>
       {#each graphs as g}
         <button
           class="option"
+          role="menuitem"
           class:active={g.name === current}
           onmousedown={() => selectGraph(g.name)}
         >
@@ -118,6 +128,11 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     z-index: 100;
     animation: fadeIn var(--transition-fast);
+    /* A database can hold more graphs than the window is tall: the list scrolls, and the
+       wheel stays with the list while the pointer is over it. */
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   @keyframes fadeIn {

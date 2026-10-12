@@ -211,23 +211,23 @@ fn build_cypher_for_property_value(label: &str, key: &str, value: &str) -> Strin
 /// Sanitize input for RediSearch fulltext queries.
 /// Escapes reserved words that would crash FalkorDB's RediSearch engine.
 pub fn sanitize_fulltext(input: &str) -> String {
-    let mut result = input.to_string();
-    let upper = input.to_uppercase();
-    for reserved in REDISEARCH_RESERVED {
-        if upper.contains(reserved) {
-            // Case-insensitive replacement: escape first occurrence per reserved word
-            if let Some(pos) = upper.find(reserved) {
-                let orig = &result[pos..pos + reserved.len()];
-                let escaped = format!("\\{}", orig);
-                result = format!(
-                    "{}{}{}",
-                    &result[..pos],
-                    escaped,
-                    &result[pos + reserved.len()..]
-                );
-            }
-        }
+    // The reserved words are plain ASCII, so only ASCII letters are uppercased: every byte stays
+    // where it was, and a place found in the copy is the same place in the input. (A full
+    // uppercase can change a text's length: ß becomes SS.)
+    let upper = input.to_ascii_uppercase();
+    // The first occurrence of each reserved word, in the order they stand in the input. Every
+    // place is found before anything is inserted, so one escape cannot shift the next.
+    let mut places: Vec<usize> = REDISEARCH_RESERVED.iter().filter_map(|word| upper.find(word)).collect();
+    places.sort_unstable();
+    places.dedup();
+    let mut result = String::with_capacity(input.len() + places.len());
+    let mut from = 0;
+    for place in places {
+        result.push_str(&input[from..place]);
+        result.push('\\');
+        from = place;
     }
+    result.push_str(&input[from..]);
     result
 }
 
@@ -245,6 +245,21 @@ mod tests {
         assert_eq!(sanitize_fulltext("MAP"), "\\MAP");
         assert_eq!(sanitize_fulltext("hello"), "hello");
         assert_eq!(sanitize_fulltext("FILTER data"), "\\FILTER data");
+    }
+
+    #[test]
+    fn two_reserved_words_are_each_escaped_where_they_stand() {
+        // The second word used to be escaped one place too early for each escape before it.
+        assert_eq!(sanitize_fulltext("map then filter"), "\\map then \\filter");
+        assert_eq!(sanitize_fulltext("filter then map"), "\\filter then \\map");
+    }
+
+    #[test]
+    fn a_letter_that_grows_when_uppercased_moves_nothing() {
+        // ß is one letter and SS is two, so a position found in a fully uppercased copy pointed
+        // into the middle of the ß, and cutting there panicked.
+        assert_eq!(sanitize_fulltext("straße"), "straße");
+        assert_eq!(sanitize_fulltext("große load"), "große \\load");
     }
 
     #[test]

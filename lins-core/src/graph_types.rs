@@ -36,8 +36,11 @@ impl PropertyValue {
             PropertyValue::Integer(i) => i.to_string(),
             PropertyValue::Float(f) => format!("{f:.4}"),
             PropertyValue::String(s) => {
-                if s.len() > 80 {
-                    format!("{}...", &s[..77])
+                // Counted and cut in letters. A cut at a byte position can land inside a letter
+                // (ö is two bytes), and cutting a text there is a panic.
+                if s.chars().count() > 80 {
+                    let head: String = s.chars().take(77).collect();
+                    format!("{head}...")
                 } else {
                     s.clone()
                 }
@@ -90,6 +93,20 @@ mod tests {
         assert_eq!(printed.is_vector(), Some(9));
         let angle = PropertyValue::String("<1, 2, 3, 4, 5, 6, 7, 8>".into());
         assert_eq!(angle.is_vector(), Some(8));
+    }
+
+    #[test]
+    fn a_long_text_is_cut_between_letters_and_never_inside_one() {
+        // Byte 77 of this text is the second byte of an ö. A cut by bytes panicked there, and a
+        // graph that held such a text could not be opened at all.
+        let text = format!("{}ö and the rest of a sentence that runs well past eighty letters", "a".repeat(76));
+        assert!(!text.is_char_boundary(77));
+        let short = PropertyValue::String(text).display_short();
+        assert_eq!(short, format!("{}ö...", "a".repeat(76)));
+        // Eighty letters are shown whole, however many bytes they take.
+        let eighty = "ö".repeat(80);
+        assert_eq!(PropertyValue::String(eighty.clone()).display_short(), eighty);
+        assert_eq!(PropertyValue::String("ö".repeat(81)).display_short(), format!("{}...", "ö".repeat(77)));
     }
 
     #[test]

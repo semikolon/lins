@@ -77,16 +77,26 @@ machine, for its own window, and stops it when you quit. Nothing on your network
 like the server, it has no sign-in, so another program on the same machine could while it is open.
 
 **Where it finds its settings**, first match wins: `--config <file>`, then `$LINS_CONFIG`, then
-`~/.config/lins/lins.toml`, then the defaults (a database on this machine). The environment
-variables below are read on top of any of them. An app opened from the dock gets no variables from
-your shell, so it needs the file, or a small script that sets the variables and starts
-`Lins.app/Contents/MacOS/lins-app`. `--graph <name>` opens on that graph.
+`~/.config/lins/lins.toml`, then what the app was last started with, then the defaults (a
+database on this machine). The environment variables below are read on top of any of them.
+`--graph <name>` opens on that graph.
+
+**Opened from the dock, it opens what it was last started with.** The dock gives an app no
+variables from your shell. So once a command (or a script that sets the variables) has started
+Lins and it reached the database, Lins keeps the settings file's path, the host, the port and the
+graph in a small file of its own, and the password in the system keychain, never in a file. To
+forget them, delete `last-start.json` in the app's folder (`~/Library/Application
+Support/se.fredrikbranstrom.lins/` on macOS) and the keychain item named after the app.
 
 If the database cannot be reached the window says so, with the reason, and the app stays open.
 
 Built and used on macOS. The crate is plain Tauri 2 and nothing in it is specific to macOS except
-`Info.plist`; Windows and Linux are untried. The app is signed for this machine only (ad hoc), so
-after each rebuild macOS may ask again whether it may reach devices on your local network.
+`Info.plist`; Windows and Linux are untried. **Signing on macOS**: if your keychain holds a
+code-signing certificate named `Lins Local` (make one in Keychain Access: Certificate Assistant,
+*Create a Certificate*, type *Code Signing*), `scripts/build-app.sh` signs with it, and macOS
+treats every rebuild as the same app, so the keychain keeps trusting it. Without one the app is
+signed ad hoc, a new app to macOS each build, which may ask again for the keychain and whether it
+may reach devices on your local network. `LINS_SIGNING_IDENTITY` names another certificate.
 
 **Where FalkorDB is can come from the environment** in place of the config file, so that a host
 name or a password need not be written into a file you share: `LINS_FALKORDB_HOST`,

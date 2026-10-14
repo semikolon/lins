@@ -610,7 +610,7 @@ Following the user's established design sensibility (forest green, Manrope, desa
 ## Security Considerations
 
 - **Query sandboxing**: All Cypher queries validated as read-only before execution
-- **Password handling**: FalkorDB password in config file, never logged or exposed via API
+- **Password handling**: FalkorDB password in config file or the environment, never logged or exposed via API. The desktop app also keeps a password that worked in the system keychain (2026-10-14, `lins-app/src/remembered.rs`), never in a file
 - **LLM API keys**: Read from environment variables, not stored in config files
 - **No auth in v1**: Single-user tool. Multi-user auth deferred to Fyr integration (v3)
 - **CORS**: Web server allows localhost by default, configurable for LAN access

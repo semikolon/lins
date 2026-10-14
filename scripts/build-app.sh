@@ -11,7 +11,8 @@
 # On macOS this builds the .app alone. A disk image, for handing the app to someone else:
 #   (cd lins-app && cargo tauri build --bundles dmg)
 #
-# LINS_APP_DIR names another folder to install into.
+# LINS_APP_DIR names another folder to install into. LINS_SIGNING_IDENTITY names the certificate
+# to sign with on macOS (default: "Lins Local", when this machine has it).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -40,6 +41,18 @@ touch "$ROOT/lins-server/src/lib.rs"
 say "the app"
 cd "$ROOT/lins-app"
 if [ "$(uname)" = "Darwin" ]; then
+  # Signed with a certificate of this machine when there is one, so that the app stays the same
+  # app across builds: macOS then keeps its answers about the keychain and the local network.
+  # Signed ad hoc otherwise, which makes every build a new app to macOS. The identity is a
+  # code-signing certificate made in Keychain Access (Certificate Assistant, Create a Certificate,
+  # type Code Signing); it is valid on this machine only.
+  IDENTITY="${LINS_SIGNING_IDENTITY:-Lins Local}"
+  if security find-identity -p codesigning 2>/dev/null | grep -qF "\"$IDENTITY\""; then
+    export APPLE_SIGNING_IDENTITY="$IDENTITY"
+    echo "Signing with \"$IDENTITY\"."
+  else
+    echo "No code-signing certificate named \"$IDENTITY\" on this machine: signing ad hoc."
+  fi
   cargo tauri build --bundles app
   BUILT="$ROOT/target/release/bundle/macos/Lins.app"
   [ -d "$BUILT" ] || { echo "The build finished and there is no app at $BUILT" >&2; exit 1; }

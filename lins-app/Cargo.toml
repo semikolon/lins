@@ -11,12 +11,18 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 lins-server = { path = "../lins-server" }
+lins-core = { path = "../lins-core" }
 tokio.workspace = true
 anyhow.workspace = true
+serde.workspace = true
 serde_json.workspace = true
+chrono.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 clap = { version = "4", features = ["derive"] }
 tauri = { version = "2", features = [] }
 # Remembers where the window was and how large.
 tauri-plugin-window-state = "2"
+# Keeps the database's password in the system's keychain, so that the app opened from the dock
+# can reach a database a command once started it on (src/remembered.rs).
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }

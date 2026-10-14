@@ -207,7 +207,7 @@
   - Embed same `lins-web` frontend
   - ~~Tauri commands → `lins-core` calls~~ **Built another way**: the app holds `lins-server` in its own process and its window opens the page that server serves, on a port of this machine. One API, shared with the browser, and nothing to keep in step. Reasoning in `CLAUDE.md` § Running.
 
-- [ ] **T-27**: Desktop app features *(part done 2026-10-12: dock icon, native window, the window's place and size remembered, on macOS; the system tray and the Windows and Linux builds are not)*
+- [ ] **T-27**: Desktop app features *(part done 2026-10-12: dock icon, native window, the window's place and size remembered, on macOS; the system tray and the Windows and Linux builds are not; 2026-10-14: opened from the dock it opens what a command last started it with, the password kept in the keychain, and it is signed with a certificate of this machine when there is one)*
   - Dock icon, native window management
   - System tray icon for daemon status (future)
   - Platform builds: `.dmg` (macOS), `.msi` (Windows), `.AppImage` (Linux)

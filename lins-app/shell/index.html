@@ -26,6 +26,9 @@
   <p>Where the database is comes from the settings file, or from the environment:
      <code>LINS_FALKORDB_HOST</code>, <code>LINS_FALKORDB_PORT</code>, <code>LINS_FALKORDB_PASSWORD</code>.
      Quit and open Lins again once it is set.</p>
+  <p>Once a command has started Lins with settings that reach the database, Lins keeps them:
+     the settings file and the address in a small file of its own, the password in the keychain.
+     Opened from the dock with nothing given, it opens the same database.</p>
 </main>
 <script>
   const failure = window.__LINS_START_FAILURE__;

@@ -11,7 +11,8 @@
   import { schema, sceneData, view } from '$lib/stores/graph';
   import { showScene } from '$lib/explore';
   import { CARD_VARS } from '$lib/cardstyle';
-  import { fillOf, fillPercent } from '$lib/view';
+  import { fillOf, fillPercent, tooltipLines } from '$lib/view';
+  import CardNote from './CardNote.svelte';
   import { STYLE, buildScene, layout, type Heights, type Layout, type Scene, type SceneGroup } from '$lib/trial/scene';
   import type { GraphNode } from '$lib/types';
 
@@ -61,6 +62,21 @@
   const scene = $derived(built && 'scene' in built ? built.scene : null);
   const facts = $derived(built && 'facts' in built ? built.facts : null);
   const sceneError = $derived(built && 'error' in built ? built.error : null);
+
+  /** The nodes on show, by their id as the scene writes it. */
+  const nodesById = $derived(new Map((result?.nodes ?? []).map((node) => [String(node.id), node] as const)));
+
+  /** What the card under the pointer says about itself, and where it is in the window. */
+  let note = $state.raw<{ lines: string[]; rect: DOMRect } | null>(null);
+  function hover(id: string, el: Element) {
+    const node = nodesById.get(id);
+    note = node ? { lines: tooltipLines(node, v), rect: el.getBoundingClientRect() } : null;
+  }
+  // A new scene has none of the old cards under the pointer.
+  $effect(() => {
+    void result;
+    untrack(() => (note = null));
+  });
 
   /** How much of each node on show is done, by its id as the scene writes it. */
   const shares = $derived.by(() => {
@@ -160,6 +176,7 @@
   function onWheel(e: WheelEvent) {
     e.preventDefault();
     moved = true;
+    note = null;
     const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const [px, py] = [e.clientX - box.left, e.clientY - box.top];
     if (e.ctrlKey || e.metaKey) {
@@ -192,6 +209,7 @@
       if (Math.hypot(dx, dy) < 4) return;
       drag.moved = true;
       moved = true;
+      note = null;
       wasDragged = true;
       grabbing = true;
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -254,9 +272,9 @@
         </svg>
         {#each placed.items as item, i (i)}
           {#if item.role === 'focus'}
-            <div class="at" style="left:{item.x}px;top:{item.y}px">{@render card(item.id, item.text, item.color, true)}</div>
+            <div class="at" role="figure" aria-label={item.text} style="left:{item.x}px;top:{item.y}px" onmouseenter={(e) => hover(item.id, e.currentTarget)} onmouseleave={() => (note = null)}>{@render card(item.id, item.text, item.color, true)}</div>
           {:else if item.role === 'card'}
-            <button type="button" class="at pick" style="left:{item.x}px;top:{item.y}px" onclick={() => pick(item.id)}>{@render card(item.id, item.text, item.color, false)}</button>
+            <button type="button" class="at pick" style="left:{item.x}px;top:{item.y}px" onclick={() => pick(item.id)} onmouseenter={(e) => hover(item.id, e.currentTarget)} onmouseleave={() => (note = null)} onfocus={(e) => hover(item.id, e.currentTarget)} onblur={() => (note = null)}>{@render card(item.id, item.text, item.color, false)}</button>
           {:else if item.role === 'header'}
             <div class="at heading" style="left:{item.x}px;top:{item.y}px;color:{item.color}">{item.text}</div>
           {:else}
@@ -275,6 +293,8 @@
       <p class="say">Loading…</p>
     {/if}
   </div>
+
+  <CardNote lines={note?.lines ?? []} rect={note?.rect ?? null} />
 
   <footer>
     {#if facts && scene && result}

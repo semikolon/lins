@@ -151,6 +151,9 @@ pub struct LabelStyle {
     #[serde(default)]
     pub shape: Option<String>,
 
+    /// The properties shown, in order, when the pointer rests on a node's card
+    /// (`tooltip = ["about"]`). Each one the node has is shown, every line of it a
+    /// part of its own; one that only repeats the node's name is left out.
     #[serde(default)]
     pub tooltip: Option<Vec<String>>,
 }
@@ -758,6 +761,7 @@ mod tests {
             [styling.labels.Claim]
             color = "#999999"
             caption = ["short_title", "text"]
+            tooltip = ["text", "reason"]
             [styling.relationships.ATTACKS]
             color = "#aa0000"
             [styling.relationships.SUPPORTS]
@@ -789,6 +793,7 @@ mod tests {
             vec!["short_title", "text"],
             "a field the user left out comes from the plugin"
         );
+        assert_eq!(claim.tooltip.as_deref(), Some(&["text".to_string(), "reason".to_string()][..]));
         assert_eq!(view.styling.relationships["ATTACKS"].color.as_deref(), Some("#bb0000"));
         assert_eq!(view.styling.relationships["SUPPORTS"].color.as_deref(), Some("#00aa00"));
         assert_eq!(view.display.properties.hide, vec!["embedding", "uuid"], "added once");
@@ -801,6 +806,7 @@ mod tests {
         let other = config.view_for("g2");
         assert_eq!(other.styling.labels["Claim"].color.as_deref(), Some("#111111"));
         assert!(other.styling.labels["Claim"].caption.is_none(), "the plugin is not for this graph");
+        assert!(other.styling.labels["Claim"].tooltip.is_none());
         assert!(other.display.nodes.hide.is_empty());
         assert!(other.display.nodes.first.is_empty());
         assert!(!other.styling.relationships.contains_key("SUPPORTS"));

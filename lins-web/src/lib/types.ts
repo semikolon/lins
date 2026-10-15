@@ -54,6 +54,8 @@ export interface LabelStyle {
   /** The property that names a node: one key, or several tried in order. */
   caption?: string | string[] | null;
   size?: number | string | null;
+  /** The properties shown when the pointer rests on a node's card, in order. */
+  tooltip?: string[] | null;
 }
 
 export interface RelationshipStyle {

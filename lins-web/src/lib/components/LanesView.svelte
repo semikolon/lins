@@ -14,7 +14,8 @@
   import { board, schema, view } from '$lib/stores/graph';
   import { LANE_STEP, arrangementsOf, showInLane, showScene } from '$lib/explore';
   import { CARD_VARS } from '$lib/cardstyle';
-  import { fillOf, fillPercent, labelColor, nodeFullName, relColor, relWords } from '$lib/view';
+  import { fillOf, fillPercent, labelColor, nodeFullName, relColor, relWords, tooltipLines } from '$lib/view';
+  import CardNote from './CardNote.svelte';
   import type { GraphEdge, GraphNode, Lane } from '$lib/types';
 
   const b = $derived($board);
@@ -48,6 +49,10 @@
   let sheet = $state<HTMLDivElement | null>(null);
   let pointed = $state<number | null>(null);
   let lines = $state.raw<{ d: string; color: string }[]>([]);
+  /** What the pointed card's view says about it, and where the card is in the window. */
+  let note = $state.raw<{ lines: string[]; rect: DOMRect } | null>(null);
+
+  const cardsById = $derived(new Map((b?.lanes ?? []).flatMap((lane) => lane.cards.map((card) => [card.id, card] as const))));
 
   /** The card pointed at and the cards it is tied to; nothing when no card is pointed at. */
   const lit = $derived.by(() => {
@@ -76,8 +81,12 @@
     const el = sheet;
     if (id === null || !el) {
       lines = [];
+      note = null;
       return;
     }
+    const node = cardsById.get(id);
+    const own = el.querySelector<HTMLElement>(`[data-card="${id}"]`);
+    note = node && own ? { lines: tooltipLines(node, v), rect: own.getBoundingClientRect() } : null;
     const origin = el.getBoundingClientRect();
     const box = (card: number) => {
       const found = el.querySelector<HTMLElement>(`[data-card="${card}"]`);
@@ -123,7 +132,7 @@
 
 <div class="lanes" style={CARD_VARS}>
   {#if b && b.lanes.length > 0}
-    <div class="scroll">
+    <div class="scroll" onscroll={() => (note = null)}>
       <div class="sheet" bind:this={sheet}>
         <svg class="ties" aria-hidden="true">
           {#each lines as line, i (i)}
@@ -189,6 +198,7 @@
       </p>
       <p class="quiet">{pointed !== null ? said : 'Point at a card to see what it is tied to among the cards on show. Press one to open it with all its ties.'}</p>
     </footer>
+    <CardNote lines={note?.lines ?? []} rect={note?.rect ?? null} />
   {:else if b}
     <p class="say">This arrangement has no lanes: nothing in the graph matches what it names.</p>
   {:else}

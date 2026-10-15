@@ -30,6 +30,25 @@ export function nodeFullName(node: GraphNode, view: GraphView | null): string {
   return node.labels[0] ?? `Node ${node.id}`;
 }
 
+/**
+ * What a node's card says when the pointer rests on it: each property its label's `tooltip` names
+ * that the node has, in order, every line of it a part of its own. A value that only repeats the
+ * node's name is left out. Nothing when the label names none.
+ */
+export function tooltipLines(node: GraphNode, view: GraphView | null): string[] {
+  const keys = node.labels.map((label) => view?.styling.labels[label]?.tooltip).find((k) => k && k.length > 0);
+  if (!keys) return [];
+  const name = nodeFullName(node, view).trim();
+  const lines: string[] = [];
+  for (const key of keys) {
+    const value = node.properties[key];
+    const text = typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : '';
+    if (text === '' || text === name) continue;
+    lines.push(...text.split('\n').map((line) => line.trim()).filter((line) => line !== ''));
+  }
+  return lines;
+}
+
 /** A node's name cut to fit beside a dot on the canvas. */
 export function nodeName(node: GraphNode, view: GraphView | null, max = 64): string {
   const full = nodeFullName(node, view).replace(/\s+/g, ' ');

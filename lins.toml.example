@@ -41,6 +41,7 @@ edge_color = "#4a5568"          # Default edge color
 # size = "property:degree"      # Size by connection count, or a fixed number (e.g. 10)
 # caption = "name"              # Property to display as node label; or several, tried in
 #                               # order: caption = ["short_title", "text"]
+# tooltip = ["summary"]         # Properties shown when the pointer rests on a card, in order
 # shape = "circle"              # circle, diamond, hexagon, square
 
 # [styling.labels.Episodic]

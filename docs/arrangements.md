@@ -49,6 +49,11 @@ and the page offers a switch between them.
   bar: its own numbers when the lane is a node that has them, else its cards' summed.
 - **Lines appear for one card at a time.** Pointing at a card draws its links to the other cards
   on show and lets the cards it is not tied to step back. Nothing else is drawn.
+- **A card says what it is when the pointer rests on it** (2026-10-15): the properties its label's
+  `tooltip` setting names, on a plate beside the card, a moment after the pointer stops. Each line of a
+  property is a part of its own, cut at a few lines; the plate sits on whichever side of the card has
+  more room and fades where it is cut, and the whole of every property is in the side panel. The same
+  plate shows around a node. The free picture does not show it.
 - **A press on a card opens it with its ties**: the card in the middle, what points at it in
   columns on the left, what it points at on the right, each column grouped by kind of link and
   counted, 8 of each kind with a stub for the rest. This is the scene the trial page drew
@@ -107,6 +112,7 @@ ties.
 | The lanes | `lins-web/src/lib/components/LanesView.svelte` | Draws what the route returns; measures the cards only to draw the pointed card's lines |
 | One thing and its ties | `lins-web/src/lib/components/SceneView.svelte` | The browser's half of the trial page, with a count for each kind of link in place of one for the whole scene |
 | The switch | `lins-web/src/lib/components/OrderSwitch.svelte` | Shown only when the view has an arrangement |
+| A card's note on hover | `lins-web/src/lib/components/CardNote.svelte`; `tooltipLines` in `lins-web/src/lib/view.ts` | The plate, and which lines go on it |
 | What is on show | `lins-web/src/lib/stores/graph.ts`: `mode`, `board`, `sceneData`, `laneCounts`; `lins-web/src/lib/explore.ts` | One place that loads each of the three and moves between them |
 | A card's look | `lins-web/src/lib/cardstyle.ts` | The scene's sizes and colours as CSS variables, so a card is the same card in a lane and around a node |
 

@@ -93,10 +93,11 @@ If the database cannot be reached the window says so, with the reason, and the a
 Built and used on macOS. The crate is plain Tauri 2 and nothing in it is specific to macOS except
 `Info.plist`; Windows and Linux are untried. **Signing on macOS**: if your keychain holds a
 code-signing certificate named `Lins Local` (make one in Keychain Access: Certificate Assistant,
-*Create a Certificate*, type *Code Signing*), `scripts/build-app.sh` signs with it, and macOS
-treats every rebuild as the same app, so the keychain keeps trusting it. Without one the app is
-signed ad hoc, a new app to macOS each build, which may ask again for the keychain and whether it
-may reach devices on your local network. `LINS_SIGNING_IDENTITY` names another certificate.
+*Create a Certificate*, type *Code Signing*), `scripts/build-app.sh` signs with it, and the app keeps
+one designated identity across builds. The keychain still asks for your login password once after
+each rebuild: for a certificate without an Apple team ID, macOS ties a keychain item to each
+build's own fingerprint. Only an Apple Developer ID ends that. Without a certificate the app is
+signed ad hoc and is a new app to macOS each build. `LINS_SIGNING_IDENTITY` names another certificate.
 
 **Where FalkorDB is can come from the environment** in place of the config file, so that a host
 name or a password need not be written into a file you share: `LINS_FALKORDB_HOST`,

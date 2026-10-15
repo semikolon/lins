@@ -8,9 +8,9 @@
 
 **GitHub**: https://github.com/semikolon/lins
 
-## Current State (Mar 17, 2026)
+## Current State (updated 2026-10-14)
 
-**Working v1 prototype**: Backend connects to live FalkorDB (16 graphs discovered), parses nodes/edges, serves REST API. SvelteKit frontend renders graphs with Sigma.js. Force-directed layout, click-to-select, property panel, graph selector, search bar, status bar.
+**The v1 prototype (March 2026)**: Backend connects to live FalkorDB, parses nodes/edges, serves REST API. SvelteKit frontend renders graphs with Sigma.js. Force-directed layout, click-to-select, property panel, graph selector, search bar, status bar. Everything below was added on top of it, and it is all in use against real graphs.
 
 **Added 2026-10-10, measured against a real graph of 7,780 nodes** (a session in another project; the settings for that graph live in that project, not here): plugin overlays load and apply per graph (`plugins = [...]`, `graphs = ["name", "prefix_*"]`, the user's config on top) · a large graph opens on its best-connected nodes (`GET /api/graphs/{name}/data`), a node opens on its neighbourhood (`/around/{id}`), words find nodes (`/find?q=`) · `caption` names a node, one key or several · a view can hide kinds of node and link, with a switch to bring them back · vectors are left out by what they are, not by name · the server carries the built page (`rust-embed`) and takes `--host` and `--open` · the connection can come from the environment (`LINS_FALKORDB_*`, then `FALKORDB_*`). Two faults found by running it, both fixed: FalkorDB returns a vector as TEXT when a whole node is returned, so the check by type never fired; and the schema sampler read a node's reply fields as its properties. None of this is a decision about the rendering library or the UI design: Sigma was kept as it was, and everything visual comes from settings. Open after it: `TODO.md`.
 
@@ -34,19 +34,12 @@
 
 ## Architecture
 
-### Current (working prototype)
-```
-lins-core/     (Rust lib)  — FalkorDB connection, schema discovery, config, query builder
-lins-server/   (Rust bin)  — Axum REST API, serves frontend
-lins-web/      (SvelteKit) — Sigma.js graph renderer + UI components
-```
-
-### Decided direction (2026-10-11)
+### As built, and the direction decided 2026-10-11
 ```
 lins-core/     (Rust lib)  — FalkorDB connection, schema, config; what an arrangement's lanes hold (`lanes.rs`); to come: what a scene around a node holds (ranking, the budget)
 lins-server/   (Rust lib+bin) — Axum API; carries the built page. `lib.rs` is the server, `main.rs` its command line
 lins-web/      (SvelteKit) — draws cards itself, HTML with SVG links: in lanes, and around one node (built 2026-10-12 for views with an arrangement). Sigma draws the free picture, and the whole main page for every other graph
-lins-app/      (Rust bin)  — the desktop app: lins-server and a Tauri 2 window on the page it serves (built 2026-10-12)
+lins-app/      (Rust bin)  — the desktop app: lins-server and a Tauri 2 window on the page it serves (built 2026-10-12); remembers its last start for the dock (2026-10-14)
 lins-render/   (Rust lib)  — the trial's Rust-drawn scene (egui); parked
 ```
 
@@ -56,7 +49,7 @@ The earlier proposal was egui for a native window and for the browser (`lins-ren
 ## FalkorDB Connection
 
 - **Protocol**: Redis/RESP via `redis-rs` (NOT Bolt)
-- **Default**: `127.0.0.1:6380`, password `falkordb`
+- **Default**: `127.0.0.1:6380`, no password. A password comes from the settings file, the environment (`LINS_FALKORDB_PASSWORD`, then `FALKORDB_PASSWORD`), or for the desktop app the keychain. Never write a real one into a file this public repository tracks.
 - **Multi-graph**: `GRAPH.QUERY <name> "<cypher>"`, `GRAPH.LIST`
 - **Schema introspection**: `CALL db.labels()`, `CALL db.relationshipTypes()`, `CALL db.propertyKeys()`
 - **Verbose mode**: queries run WITHOUT `--compact` flag for human-readable labels/property names
@@ -114,7 +107,7 @@ Bloom-inspired but better. **Mid-to-dark theme** (not pure dark, not light — "
 
 | Project | Relevance |
 |---------|-----------|
-| **Fyr** (`~/Projects/fyr/`) | Personal assistant, Tauri 2 + SvelteKit. Primary early user. Shares Rust stack — `lins-render` would be a shared crate. Custom entity types (Task, Deadline, Routine). |
+| **Fyr** (`~/Projects/fyr/`) | Personal assistant, Tauri 2 + SvelteKit. Primary early user. The pattern Lins's desktop app follows: a Rust shell around a page drawn by the system's web view. What can be shared is page code (cards, scenes) and the shell's lessons (a stable local signature, settings for a dock launch); `lins-render` is parked, not shared. Fyr's dev bundle is still signed ad hoc; the `Lins Local` certificate would keep its identity stable across builds too. Custom entity types (Task, Deadline, Routine). |
 | **Graphiti Fork** (`~/Projects/graphiti-official/`) | Knowledge graph that produces the data Lins visualizes. Fork with reliability fixes. |
 | **dotfiles** (`~/dotfiles/`) | Where Graphiti MCP config, FalkorDB setup, and knowledge management lives. |
 
@@ -142,7 +135,7 @@ cd lins-web && npm run dev -- --port 5173      # proxies /api to 3334; open http
 **The desktop app (2026-10-12): `scripts/build-app.sh --install`** builds the page, the server and `lins-app`, and puts `Lins.app` in `~/Applications` (`LINS_APP_DIR` names another folder). Needs the Tauri command (`cargo install tauri-cli --version "^2"`). How it is made, and why:
 - **One process, no second API.** `lins-app` calls `lins_server::bind(config, "127.0.0.1", 0)`, runs the server on the port it was given, and opens a Tauri window on `http://127.0.0.1:<port>/`. The page and its `/api` calls are the ones the browser uses, unchanged. The spec's task T-26 asked for Tauri commands calling `lins-core`; that would have been a second way to ask every question, to be kept in step with the first by hand. So there are no commands, no IPC and no capabilities file.
 - **Settings**: `--config`, then `$LINS_CONFIG`, then `~/.config/lins/lins.toml`, then **what the app was last started with**, then defaults; the `LINS_FALKORDB_*` and `FALKORDB_*` variables on top. `--graph <name>` opens on a graph (the page reads `?graph=`).
-- **Opened from the dock it is given nothing, so it remembers** (`lins-app/src/remembered.rs`, 2026-10-14, on the owner's word). A start that reaches the database is kept: the settings file's full path, the host, the port and the graph in `last-start.json` in the app's own folder (`~/Library/Application Support/se.fredrikbranstrom.lins/` on macOS), and the password in the system keychain (service `se.fredrikbranstrom.lins`, account `host:port`), never in a file. A start that came from the kept one writes nothing back. Any start whose settings hold no password looks in the keychain for that `host:port`. To forget: delete `last-start.json`, and the keychain item in Keychain Access. Before this, the dock launch looked for the database on this machine (the default) and failed after ten seconds, which read as a backend that had not started.
+- **Opened from the dock it is given nothing, so it remembers** (`lins-app/src/remembered.rs`, 2026-10-14, on the owner's word). A start that reaches the database is kept: the settings file's full path, the host, the port and the graph in `last-start.json` in the app's own folder (`~/Library/Application Support/se.fredrikbranstrom.lins/` on macOS), and the password in the system keychain (service `se.fredrikbranstrom.lins`, account `host:port`), never in a file. A start that came from the kept one writes nothing back. Any start whose settings hold no password looks in the keychain for that `host:port`. To forget: delete `last-start.json`, and the keychain item in Keychain Access. Before this, the dock launch looked for the database on this machine (the default) and failed after ten seconds, which read as a backend that had not started. Set aside: the password in a settings file (plain text on disk); a user settings file that lists a project's views again (a second copy that drifts from the one the project keeps); starting a database on this machine (it would be an empty one, not the one the views describe).
 - **When the database cannot be reached** (ten seconds of patience) the window shows `lins-app/shell/index.html` with the reason; the app does not exit.
 - **`lins-app/gen/` is generated** by the build and ignored. The icon is drawn in `lins-app/icons/icon.svg`; the other sizes are made from it with `cargo tauri icon`.
 - **Install outside `target/`** if anything on your machine sweeps build folders: an app left in `target/release/bundle/` goes with them.

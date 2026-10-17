@@ -60,10 +60,13 @@ fn fill_sums(alias: &str, rule: Option<&FillRule>) -> String {
         Some(key) => format!("sum(coalesce(toFloat({alias}.{key}), 0))"),
         None => "0".to_string(),
     };
-    match rule {
-        Some(rule) => format!("{}, {}, {}", sum(Some(&rule.of)), sum(rule.left.as_ref()), sum(rule.done.as_ref())),
-        None => "0, 0, 0".to_string(),
-    }
+    // FalkorDB requires distinct result-column names, including repeated zero placeholders
+    // when no fill is configured. Aliases also cover two roles using the same property.
+    let (of, left, done) = match rule {
+        Some(rule) => (sum(Some(&rule.of)), sum(rule.left.as_ref()), sum(rule.done.as_ref())),
+        None => ("0".to_string(), "0".to_string(), "0".to_string()),
+    };
+    format!("{of} AS fill_of, {left} AS fill_left, {done} AS fill_done")
 }
 
 /// How a lane's cards are ordered: by the property, the cards that lack it last, and by id
@@ -258,7 +261,7 @@ mod tests {
             node_lane_totals_query(7, "BELONGS_TO", "true", Some(&fill(Some("open"), None))).as_deref(),
             Some(
                 "MATCH (c)-[:`BELONGS_TO`]->(l) WHERE id(l) = 7 AND true WITH DISTINCT c RETURN count(c), \
-                 sum(coalesce(toFloat(c.total), 0)), sum(coalesce(toFloat(c.open), 0)), 0"
+                 sum(coalesce(toFloat(c.total), 0)) AS fill_of, sum(coalesce(toFloat(c.open), 0)) AS fill_left, 0 AS fill_done"
             )
         );
         assert_eq!(
@@ -273,7 +276,7 @@ mod tests {
     fn the_queries_for_lanes_that_are_values() {
         assert_eq!(
             value_lanes_query(&[rule("Topic")], "week", "true", None).as_deref(),
-            Some("MATCH (c) WHERE true AND ('Topic' IN labels(c)) RETURN toString(c.week), count(c), 0, 0, 0")
+            Some("MATCH (c) WHERE true AND ('Topic' IN labels(c)) RETURN toString(c.week), count(c), 0 AS fill_of, 0 AS fill_left, 0 AS fill_done")
         );
         assert_eq!(
             value_lane_cards_query(&[rule("Topic")], "week", Some("it's"), "true", "id(c)", 0, 8).as_deref(),

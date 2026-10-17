@@ -152,3 +152,7 @@ the face) are untouched: the cards use the trial's colours and the page's presen
   in the TypeScript alone, since it decides what a scene holds and not where a box goes.
 - **Not known**: how lanes read with dozens of them, or with cards of very different heights; and
   whether a reader wants the page to open on the order they last used rather than the first.
+
+**Queries without a fill rule:** totals still return three fill columns, each with its own alias.
+FalkorDB rejects repeated unnamed zero columns; this matters for ordinary cards without progress
+counts as well as partially specified fill rules (`lanes::fill_sums`, fixed 2026-10-16).
